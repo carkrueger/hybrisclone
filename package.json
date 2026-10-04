@@ -1,0 +1,20 @@
+{
+  "name": "hybrisclone",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hybris-style vertical scrolling shoot-'em-up with seeded procedural levels",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
