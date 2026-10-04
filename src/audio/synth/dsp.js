@@ -149,6 +149,13 @@ export function sfxBank(sr) {
   b.extraLife = chime([67, 71, 74, 79, 74, 79, 83, 86, 91], 0.06);
   b.menuMove = chime([88], 0.02, 'fm');
   b.menuSelect = chime([81, 93], 0.05, 'fm');
+  b.laser = synth(sr, 0.7, (t, i, st) => {
+    st.ph = (st.ph || 0) + (180 + 60 * Math.sin(t * 40)) / sr;
+    const buzz = sq(st.ph) * 0.4 + Math.sin(TAU * st.ph * 3) * 0.3;
+    const hiss = nz() * 0.3;
+    return (buzz + hiss) * Math.min(1, t * 30) * Math.exp(-t * 3);
+  });
+  b.telegraph = synth(sr, 0.18, (t) => (sq(1400 * t) * 0.4 + sq(1405 * t) * 0.4) * Math.exp(-t * 18));
   b.warning = synth(sr, 1.6, (t) => {
     const f = Math.floor(t / 0.25) % 2 ? 660 : 880;
     const seg = t % 0.25;

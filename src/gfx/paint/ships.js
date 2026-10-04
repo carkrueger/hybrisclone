@@ -322,6 +322,268 @@ const SHIPS = {
       { x: 38, y: 62, r: 6, color: 0xff3030, pair: true },
     ],
   },
+  e_tug: {
+    w: 104,
+    h: 104,
+    decal: { text: 'T-9', x: 0, y: -14, size: 11 },
+    parts: [
+      { pair: true, pts: [[26, 24], [38, 24], [40, 46], [26, 46]], mat: 'dark' },
+      { pts: [[0, -42], [30, -42], [42, -28], [42, 28], [30, 40], [0, 40]], mat: 'gold' },
+      { pts: [[0, -30], [20, -30], [26, -20], [26, 14], [0, 18]], mat: 'steel' },
+    ],
+    glass: [[0, 26, 8, 6, 0x60c0ff]],
+    details: (ctx, cx, cy) => {
+      for (let k = -2; k <= 2; k++) panelLine(ctx, cx - 40, cy + k * 12, cx - 28, cy + k * 12 + 8, 0.5);
+      for (const sx of [-1, 1]) rivet(ctx, cx + sx * 34, cy - 30);
+    },
+    lights: [
+      { x: 40, y: -26, r: 6, color: 0xffb030, pair: true },
+      { x: 33, y: 46, r: 5, color: 0xff3030, pair: true },
+    ],
+  },
+  e_welder: {
+    w: 76,
+    h: 76,
+    parts: [
+      { pair: true, pts: [[16, -5], [34, -5], [34, 5], [16, 5]], mat: 'dark' },
+      { circle: [0, 0, 20], mat: 'steel' },
+      { circle: [0, 0, 11], mat: 'blue' },
+    ],
+    lights: [
+      { x: 35, y: 0, r: 8, color: 0x9ae8ff, pair: true },
+      { x: 0, y: 0, r: 9, color: 0x80c8ff, i: 0.6 },
+    ],
+  },
+  e_railturret: {
+    w: 96,
+    h: 96,
+    parts: [
+      { pts: [[0, -44], [40, -44], [46, -38], [46, 38], [40, 44], [0, 44]], mat: 'dark' },
+      { pair: true, pts: [[30, -44], [38, -44], [38, 44], [30, 44]], mat: 'steel' },
+      { circle: [0, 0, 26], mat: 'steel' },
+      { circle: [0, 0, 14], mat: 'blue' },
+    ],
+    lights: [{ x: 0, y: 0, r: 9, color: 0x60c8ff, i: 0.7 }],
+  },
+  railturret_barrel: {
+    w: 30,
+    h: 110,
+    parts: [
+      { pair: true, pts: [[3, -52], [9, -52], [9, 20], [3, 20]], mat: 'hull' },
+      { pts: [[0, 10], [12, 10], [12, 40], [0, 44]], mat: 'hull2' },
+    ],
+    lights: [{ x: 0, y: -10, r: 6, color: 0x80d8ff }, { x: 0, y: -34, r: 5, color: 0x80d8ff }],
+  },
+  e_shard: {
+    w: 76,
+    h: 80,
+    parts: [
+      { pts: [[0, -36], [18, -12], [24, 10], [10, 34], [0, 38]], mat: { base: 0x58b8e8, sheen: true } },
+      { pts: [[0, -22], [10, -6], [12, 10], [0, 26]], mat: { base: 0xc8f0ff, sheen: true } },
+    ],
+    lights: [{ x: 0, y: 0, r: 14, color: 0x80e8ff, i: 0.5 }],
+  },
+  e_shardlet: {
+    w: 40,
+    h: 40,
+    parts: [{ pts: [[0, -18], [10, -2], [8, 10], [0, 18]], mat: { base: 0x70d0f8, sheen: true } }],
+    lights: [{ x: 0, y: 0, r: 8, color: 0x80e8ff, i: 0.5 }],
+  },
+  e_driller: {
+    w: 76,
+    h: 100,
+    parts: [
+      { pair: true, pts: [[10, -16], [26, -30], [28, -10], [14, 6]], mat: 'dark' },
+      { pts: [[0, 22], [16, 14], [20, -16], [14, -40], [0, -44]], mat: 'orange' },
+      { pts: [[0, 48], [14, 20], [0, 16]], mat: 'steel' },
+    ],
+    details: (ctx, cx, cy) => {
+      for (let k = 0; k < 4; k++) panelLine(ctx, cx - 12 + k * 3, cy + 20 + k * 6, cx + 12 - k * 3, cy + 26 + k * 6, 0.7);
+    },
+    glass: [[0, -12, 5, 8, 0xffd060]],
+    lights: [{ x: 6, y: -44, r: 7, color: 0xff9a30, pair: true }],
+  },
+  e_prism: {
+    w: 86,
+    h: 86,
+    glowTex: true,
+    parts: [
+      { pts: [[0, -40], [28, -8], [28, 8], [0, 40]], mat: { base: 0x88c8f0, sheen: true } },
+      { pts: [[0, -26], [15, -4], [15, 4], [0, 26]], mat: { base: 0xe0f8ff, sheen: true } },
+    ],
+    lights: [
+      { x: 0, y: 0, r: 16, color: 0x80f0ff, i: 0.8 },
+      { x: 28, y: 0, r: 5, color: 0xc0f8ff, pair: true },
+    ],
+  },
+  e_swarmer: {
+    w: 46,
+    h: 50,
+    parts: [
+      { pair: true, pts: [[5, -8], [20, -18], [22, -6], [7, 4]], mat: { base: 0x70d090, sheen: true } },
+      { circle: [0, 0, 9], ry: 16, mat: 'purple' },
+    ],
+    lights: [{ x: 4, y: 12, r: 4, color: 0xff4040, pair: true }],
+  },
+  e_spitter: {
+    w: 86,
+    h: 92,
+    parts: [
+      { pair: true, pts: [[16, -20], [36, -34], [38, -26], [20, -10]], mat: 'dark' },
+      { pair: true, pts: [[18, 10], [38, 22], [34, 28], [16, 18]], mat: 'dark' },
+      { circle: [0, 0, 26], ry: 32, mat: { base: 0x7a5a9a, sheen: true } },
+      { circle: [0, 18, 12], mat: { base: 0x4a8a3a } },
+    ],
+    lights: [
+      { x: 0, y: 22, r: 12, color: 0x90ff50, i: 0.8 },
+      { x: 12, y: -10, r: 5, color: 0xa0ff80, pair: true },
+    ],
+  },
+  e_brood: {
+    w: 100,
+    h: 100,
+    parts: [
+      { circle: [0, 0, 40], mat: { base: 0x4a3058 } },
+      { circle: [-14, -8, 16], ry: 20, mat: { base: 0xa080b8, sheen: true } },
+      { circle: [16, -6, 15], ry: 19, mat: { base: 0x9a78b0, sheen: true } },
+      { circle: [0, 16, 17], ry: 20, mat: { base: 0xb090c8, sheen: true } },
+    ],
+    lights: [
+      { x: -14, y: -8, r: 8, color: 0x80ff90, i: 0.6 },
+      { x: 16, y: -6, r: 8, color: 0x80ff90, i: 0.6 },
+      { x: 0, y: 16, r: 8, color: 0x80ff90, i: 0.6 },
+    ],
+  },
+  e_lavabomber: {
+    w: 160,
+    h: 130,
+    glowTex: true,
+    decal: { text: 'F-3', x: 0, y: -28, size: 11, color: 'rgba(255,200,150,0.6)' },
+    parts: [
+      { pair: true, pts: [[22, -30], [70, -16], [76, 10], [56, 26], [24, 24]], mat: { base: 0x5a4a48 } },
+      { pair: true, pts: [[40, -6], [62, 0], [52, 14], [40, 12]], mat: { base: 0xc04010 } },
+      { pts: [[0, 60], [18, 50], [26, 8], [24, -44], [14, -58], [0, -60]], mat: { base: 0x6a5450, sheen: true } },
+      { pts: [[0, 40], [12, 32], [14, 4], [0, 0]], mat: 'dark' },
+    ],
+    lights: [
+      { x: 50, y: 4, r: 12, color: 0xff6010, pair: true },
+      { x: 0, y: 22, r: 10, color: 0xff8030 },
+      { x: 18, y: -58, r: 10, color: 0xff8a30, pair: true },
+    ],
+  },
+  e_flametank: {
+    w: 96,
+    h: 110,
+    parts: [
+      { pair: true, pts: [[28, -44], [44, -44], [44, 44], [28, 44]], mat: 'dark' },
+      { pts: [[0, -40], [28, -40], [30, 36], [0, 40]], mat: 'darkred' },
+      { circle: [0, -4, 18], mat: 'steel' },
+      { pts: [[0, 40], [8, 40], [8, 56], [0, 56]], mat: 'dark' },
+    ],
+    details: (ctx, cx, cy) => {
+      for (let y = -40; y < 44; y += 9) for (const sx of [-1, 1]) panelLine(ctx, cx + sx * 30, cy + y, cx + sx * 42, cy + y, 0.6);
+    },
+    lights: [{ x: 0, y: 54, r: 9, color: 0xff7020 }],
+  },
+  e_missilepod: {
+    w: 96,
+    h: 96,
+    parts: [
+      { pts: [[0, -42], [36, -42], [44, -34], [44, 34], [36, 42], [0, 42]], mat: { base: 0x6a5048 } },
+      { circle: [-16, -16, 11], mat: 'dark' },
+      { circle: [16, -16, 11], mat: 'dark' },
+      { circle: [-16, 16, 11], mat: 'dark' },
+      { circle: [16, 16, 11], mat: 'dark' },
+    ],
+    lights: [
+      { x: 16, y: -16, r: 6, color: 0xff3030, pair: true },
+      { x: 16, y: 16, r: 6, color: 0xff3030, pair: true },
+    ],
+  },
+  e_ghost: {
+    w: 90,
+    h: 100,
+    glowTex: true,
+    parts: [
+      { pair: true, pts: [[8, -6], [40, -30], [44, -42], [32, -44], [10, -24]], mat: { base: 0x6a9a88 } },
+      { pts: [[0, 46], [8, 30], [12, 0], [10, -32], [6, -44], [0, -46]], mat: { base: 0x90b8a8, sheen: true } },
+    ],
+    glass: [[0, 12, 5, 11, 0x90ffd0]],
+    lights: [
+      { x: 0, y: 12, r: 16, color: 0x90ffc8, i: 0.5 },
+      { x: 42, y: -38, r: 6, color: 0xa0ffc0, pair: true },
+    ],
+  },
+  e_claw: {
+    w: 96,
+    h: 96,
+    parts: [
+      { pair: true, pts: [[10, 6], [32, 18], [38, 40], [30, 44], [24, 26], [8, 18]], mat: 'steel' },
+      { pair: true, pts: [[30, 40], [38, 40], [34, 48]], mat: 'dark' },
+      { circle: [0, -6, 24], mat: { base: 0x8a6a4a, sheen: true } },
+    ],
+    glass: [[0, -6, 8, 8, 0xffb060]],
+    lights: [{ x: 0, y: -30, r: 8, color: 0xffa040 }],
+  },
+  e_sniper: {
+    w: 88,
+    h: 88,
+    parts: [
+      { pts: [[0, -40], [18, -40], [40, -18], [40, 18], [18, 40], [0, 40]], mat: { base: 0x4a5448 } },
+      { circle: [0, 0, 24], mat: 'steel' },
+      { circle: [0, 0, 12], mat: { base: 0x2a6a40 } },
+    ],
+    lights: [{ x: 0, y: 0, r: 8, color: 0xa0ffc0, i: 0.7 }],
+  },
+  sniper_barrel: {
+    w: 22,
+    h: 120,
+    parts: [
+      { pts: [[0, -56], [4, -56], [4, 24], [0, 24]], mat: 'hull' },
+      { pts: [[0, -10], [9, -10], [9, 6], [0, 6]], mat: 'dark' },
+      { pts: [[0, 18], [10, 18], [10, 44], [0, 48]], mat: 'hull2' },
+    ],
+    lights: [{ x: 0, y: -2, r: 5, color: 0xa0ffc0 }],
+  },
+  e_elite: {
+    w: 96,
+    h: 100,
+    glowTex: true,
+    decal: { text: 'X', x: 0, y: -18, size: 12, color: 'rgba(120,80,10,0.8)' },
+    parts: [
+      { pair: true, pts: [[6, -8], [42, -24], [46, -12], [16, 16], [8, 18]], mat: { base: 0xe8e8f0, sheen: true } },
+      { pair: true, pts: [[30, -20], [44, -24], [46, -12], [36, -10]], mat: 'gold' },
+      { pts: [[0, 46], [8, 30], [11, 0], [9, -32], [5, -44], [0, -46]], mat: 'gold' },
+    ],
+    glass: [[0, 10, 5, 12, 0x60a8ff]],
+    lights: [
+      { x: 6, y: -46, r: 8, color: 0x80c0ff, pair: true },
+      { x: 46, y: -16, r: 5, color: 0xffe080, pair: true },
+    ],
+  },
+  e_shielddrone: {
+    w: 66,
+    h: 66,
+    parts: [
+      { pair: true, pts: [[16, -14], [28, -20], [30, -6], [18, -2]], mat: 'gold' },
+      { circle: [0, 0, 20], mat: { base: 0xe8eaf0, sheen: true } },
+      { circle: [0, 0, 10], mat: 'blue' },
+    ],
+    lights: [{ x: 0, y: 0, r: 14, color: 0x80c8ff, i: 0.7 }],
+  },
+  e_gatepylon: {
+    w: 76,
+    h: 96,
+    glowTex: true,
+    parts: [
+      { pts: [[0, -44], [22, -36], [28, 30], [16, 44], [0, 46]], mat: 'gold' },
+      { pts: [[0, -26], [12, -20], [14, 18], [0, 24]], mat: { base: 0xe8e8f0, sheen: true } },
+    ],
+    lights: [
+      { x: 0, y: 0, r: 16, color: 0xffd060, i: 0.9 },
+      { x: 24, y: 28, r: 5, color: 0xffffff, pair: true },
+    ],
+  },
   boss_gun: {
     w: 76,
     h: 84,
@@ -459,6 +721,11 @@ export const SHIP_ENGINES = {
   e_bomber: { tex: 'flame_orange', dir: -1, scale: 1.1, at: [[-52, -30], [52, -30]] },
   e_interceptor: { tex: 'flame_blue', dir: -1, scale: 0.6, at: [[-4, -44], [4, -44]] },
   e_gunship: { tex: 'flame_orange', dir: -1, scale: 1, at: [[-14, -62], [14, -62]] },
+  e_tug: { tex: 'flame_orange', dir: -1, scale: 0.9, at: [[-18, -44], [18, -44]] },
+  e_driller: { tex: 'flame_orange', dir: -1, scale: 0.6, at: [[-6, -46], [6, -46]] },
+  e_lavabomber: { tex: 'flame_orange', dir: -1, scale: 1.1, at: [[-18, -60], [18, -60]] },
+  e_elite: { tex: 'flame_blue', dir: -1, scale: 0.7, at: [[-6, -48], [6, -48]] },
+  e_claw: { tex: 'flame_orange', dir: -1, scale: 0.6, at: [[0, -32]] },
 };
 
 export function paintShips(scene) {

@@ -4,21 +4,17 @@
 import { W, H, MEGA_PARALLAX } from '../config.js';
 import { hashSeed } from '../core/rng.js';
 
-export const MEGA_KINDS = ['battleship', 'carrier', 'ring', 'dock'];
+export const MEGA_KINDS = ['battleship', 'carrier', 'ring', 'dock', 'asteroid', 'hiveship', 'smelter', 'wreck', 'spire'];
 
-export function generateMegaLayer(rng, sectorLength) {
+export function generateMegaLayer(rng, sectorLength, weights = { battleship: 4, carrier: 3, ring: 2, dock: 2 }) {
+  const pool = Object.entries(weights).map(([k, w]) => [w, k]);
   const range = sectorLength * MEGA_PARALLAX + H;
   const out = [];
   let d = rng.int(250, 650);
   let side = rng.chance(0.5) ? -1 : 1;
   let i = 0;
   while (d < range + 500) {
-    const kind = rng.weighted([
-      [4, 'battleship'],
-      [3, 'carrier'],
-      [2, 'ring'],
-      [2, 'dock'],
-    ]);
+    const kind = rng.weighted(pool);
     const x = side < 0 ? rng.int(-80, 620) : rng.int(W - 620, W + 80);
     out.push({
       kind,

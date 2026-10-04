@@ -7,7 +7,20 @@ const EMPTY = -1;
 const grid = (rows, cols, v) => Array.from({ length: rows }, () => new Array(cols).fill(v));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export function generateBackdrop(rng, rows, { sector = 0 } = {}) {
+const DEFAULT_SEGMENTS = { space: 2, hull: 4, walls: 3, islands: 2, spine: 2, twin: 3 };
+const DEFAULT_PROPS = { dome: 3, reactor: 2, hangar: 2, pad: 2, tower: 3, tanks: 3 };
+const DEFAULT_DECO = { VENT: 5, GRATE: 3, HATCH: 3, LIGHT_RED: 2, LIGHT_CYAN: 2, FAN: 2, CRATE: 2, GREEBLE: 3 };
+// decorations that also look right on raised plateaus
+const RAISED_OK = new Set(['VENT', 'LIGHT_RED', 'LIGHT_CYAN', 'FAN', 'GREEBLE', 'HATCH', 'HEX', 'VENT_GLOW', 'WINDOWS', 'CRYSTAL', 'ICE_VENT', 'EGG', 'VEIN', 'LAVA', 'DEBRIS', 'EMBLEM', 'LIGHT_PANEL', 'SPORE']);
+
+/** opts: { theme, D } */
+export function generateBackdrop(rng, rows, { theme = null, D = 0 } = {}) {
+  const segW = Object.entries(theme ? theme.segWeights : DEFAULT_SEGMENTS).map(([k, w]) => [w, k]);
+  const decoSrc = theme ? theme.deco : DEFAULT_DECO;
+  const groundPool = Object.entries(decoSrc).map(([k, w]) => [w, DECO[k]]);
+  const raisedPool = Object.entries(decoSrc).filter(([k]) => RAISED_OK.has(k)).map(([k, w]) => [w, DECO[k]]);
+  if (!raisedPool.length) raisedPool.push([1, DECO.VENT]);
+  const propPool = Object.entries(theme ? theme.props : DEFAULT_PROPS).map(([k, w]) => [w, k]);
   const base = grid(rows, COLS, 0);
   const raised = grid(rows, COLS, 0);
   const deco = grid(rows, COLS, EMPTY);
@@ -33,14 +46,7 @@ export function generateBackdrop(rng, rows, { sector = 0 } = {}) {
   while (r < end) {
     const len = Math.min(rng.int(7, 18), end - r);
     if (len < 5) break;
-    const type = rng.weighted([
-      [2, 'space'],
-      [4, 'hull'],
-      [3, 'walls'],
-      [2, 'islands'],
-      [2, 'spine'],
-      [3, 'twin'],
-    ]);
+    const type = rng.weighted(segW);
     const r0 = r;
     const r1 = r + len;
 
@@ -144,14 +150,6 @@ export function generateBackdrop(rng, rows, { sector = 0 } = {}) {
   // big multi-cell props: footprint + 1-cell margin must be plain base plating
   const occupied = grid(rows, COLS, 0);
   const props = [];
-  const propPool = [
-    [3, 'dome'],
-    [2, 'reactor'],
-    [2, 'hangar'],
-    [2, 'pad'],
-    [3, 'tower'],
-    [3, 'tanks'],
-  ];
   const fits = (r0, c0, w, h) => {
     for (let rr = r0 - 1; rr <= r0 + h; rr++) {
       for (let cc = c0 - 1; cc <= c0 + w; cc++) {
@@ -179,37 +177,6 @@ export function generateBackdrop(rng, rows, { sector = 0 } = {}) {
     }
   }
 
-  const groundPool = [
-    [5, DECO.VENT],
-    [3, DECO.GRATE],
-    [3, DECO.HATCH],
-    [2, DECO.LIGHT_RED],
-    [2, DECO.LIGHT_CYAN],
-    [1, DECO.LIGHT_AMBER],
-    [2, DECO.FAN],
-    [1, DECO.DISH],
-    [2, DECO.CRATE],
-    [2, DECO.SOLAR],
-    [3, DECO.GREEBLE],
-    [1, DECO.PAD],
-    [2, DECO.WINDOWS],
-    [1, DECO.VENT_GLOW],
-    [2, DECO.CONDUIT],
-    [2, DECO.HEX],
-    [2, DECO.TERMINAL],
-    [1, DECO.CHEVRON],
-  ];
-  const raisedPool = [
-    [3, DECO.VENT],
-    [2, DECO.LIGHT_RED],
-    [2, DECO.LIGHT_CYAN],
-    [2, DECO.FAN],
-    [2, DECO.GREEBLE],
-    [1, DECO.HATCH],
-    [2, DECO.HEX],
-    [1, DECO.VENT_GLOW],
-    [1, DECO.WINDOWS],
-  ];
   for (let rr = 0; rr < rows; rr++) {
     for (let c = 0; c < COLS; c++) {
       if (deco[rr][c] !== EMPTY || occupied[rr][c]) continue;
@@ -223,7 +190,7 @@ export function generateBackdrop(rng, rows, { sector = 0 } = {}) {
 
   // ground-turret mounts
   const turrets = [];
-  const turretChance = Math.min(0.6, 0.25 + sector * 0.06);
+  const turretChance = Math.min(0.6, 0.22 + D * 0.05);
   let lastRow = -10;
   for (let rr = start + 14; rr < end; rr++) {
     if (rr - lastRow < 4) continue;

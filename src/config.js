@@ -7,7 +7,9 @@ export const TILE = 64;
 export const COLS = W / TILE;
 
 export const SCROLL_SPEED = 32 * U; // px per second of backdrop scroll
-export const SECTOR_LENGTH = 4800 * U; // scroll distance before the boss (~2.5 min)
+export const SECTOR_LENGTH = 4800 * U; // legacy: full-length stretch
+export const LEVEL_LENGTH = 2700 * U; // ~80 s of scrolling before the mid-boss
+export const BOSS_LEVEL_LENGTH = 3200 * U; // level 4, before the sector boss
 export const MID_PARALLAX = 0.55; // scroll factor of the distant girder layer
 export const MEGA_PARALLAX = 0.3; // scroll factor of the capital-ship layer
 export const BOSS_SCALE = 3.1; // boss design units -> world px

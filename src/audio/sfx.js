@@ -13,6 +13,8 @@ export const SFX_THROTTLE = {
   explodeHuge: 300,
   pickup: 80,
   menuMove: 30,
+  laser: 120,
+  telegraph: 90,
 };
 
 const LEVEL = {
@@ -32,6 +34,8 @@ const LEVEL = {
   warning: 0.45,
   menuMove: 0.3,
   menuSelect: 0.4,
+  laser: 0.5,
+  telegraph: 0.25,
 };
 
 // pitch variation keeps rapid repeats from sounding mechanical

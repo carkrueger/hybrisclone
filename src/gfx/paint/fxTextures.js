@@ -225,7 +225,79 @@ function flareShapes(scene) {
   addCanvasTexture(scene, 'flare_hex', hex.c);
 }
 
+function enemyMissile(scene) {
+  const { c, ctx } = newCanvas(22, 44);
+  ctx.beginPath();
+  ctx.moveTo(11, 3);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(16, 32);
+  ctx.lineTo(20, 40);
+  ctx.lineTo(2, 40);
+  ctx.lineTo(6, 32);
+  ctx.lineTo(6, 12);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(6, 0, 16, 0);
+  g.addColorStop(0, '#5a3030');
+  g.addColorStop(0.5, '#e0d0d0');
+  g.addColorStop(1, '#3a2020');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = '#0a0606';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = '#ff3030';
+  ctx.fillRect(6, 10, 10, 5);
+  ctx.globalCompositeOperation = 'lighter';
+  glowDot(ctx, 11, 8, 6, 0xff4040, 0.9);
+  addCanvasTexture(scene, 'em_missile', c);
+}
+
+function beamTex(scene) {
+  const { c, ctx } = newCanvas(64, 32);
+  const g = ctx.createLinearGradient(0, 0, 0, 32);
+  g.addColorStop(0, 'rgba(255,255,255,0)');
+  g.addColorStop(0.3, 'rgba(255,255,255,0.45)');
+  g.addColorStop(0.45, 'rgba(255,255,255,1)');
+  g.addColorStop(0.55, 'rgba(255,255,255,1)');
+  g.addColorStop(0.7, 'rgba(255,255,255,0.45)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 32);
+  addCanvasTexture(scene, 'beam', c);
+}
+
+function acidPool(scene) {
+  const size = 160;
+  const { c, ctx } = newCanvas(size, size);
+  const n = new ValueNoise(77);
+  const img = ctx.createImageData(size, size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = (x - size / 2) / (size / 2);
+      const dy = (y - size / 2) / (size / 2);
+      const d = Math.sqrt(dx * dx + dy * dy) + (n.fbm(x / 14, y / 14, 3) - 0.5) * 0.4;
+      if (d > 1) continue;
+      const i = (y * size + x) * 4;
+      const k = 1 - d;
+      img.data[i] = 60 + 120 * k;
+      img.data[i + 1] = 200 + 55 * k;
+      img.data[i + 2] = 40;
+      img.data[i + 3] = Math.min(255, 255 * Math.min(1, k * 3) * 0.75);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  addCanvasTexture(scene, 'acid_pool', c);
+}
+
 export function paintFx(scene) {
+  enemyMissile(scene);
+  beamTex(scene);
+  acidPool(scene);
+  capsule(scene, 'eb_shard', 8, 26, 0x60e8ff, 0xf0ffff);
+  orb(scene, 'eb_acid', 9, 0x70ff40);
+  orb(scene, 'eb_ember', 8, 0xff6a10);
+  orb(scene, 'eb_ghost', 8, 0x90ffc8);
+  orb(scene, 'eb_gold', 8, 0xffc830);
   capsule(scene, 'pb_main', 10, 40, 0xffb020, 0xffffe0);
   plume(scene, 'plume', 48, 220, 0xffffff, 0x9ad0ff, 0x3a70ff);
   plume(scene, 'flame_blue', 26, 80, 0xffffff, 0x80d8ff, 0x2a60ff);

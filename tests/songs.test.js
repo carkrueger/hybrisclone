@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { composeSong, JINGLES, TITLE_SEED } from '../src/audio/composer/arrange.js';
 import { INSTRUMENT_NAMES } from '../src/audio/synth/instruments.js';
 import { voiceLead, chordShape, SCALES } from '../src/audio/composer/theory.js';
-import { generateSector } from '../src/level/generator.js';
+import { generateLevel } from '../src/level/generator.js';
 
 const DRUMS = ['kick', 'snare', 'clap', 'hat', 'ohat', 'crash', 'tomL', 'tomM', 'tomH'];
 
 describe('composeSong', () => {
   it('is deterministic per seed and style', () => {
-    const { music } = generateSector('HYBRIS', 0);
+    const { music } = generateLevel('HYBRIS', 0, 0);
     expect(JSON.stringify(composeSong(music.main, 'sector'))).toBe(JSON.stringify(composeSong(music.main, 'sector')));
     expect(JSON.stringify(composeSong(music.boss, 'boss'))).toBe(JSON.stringify(composeSong(music.boss, 'boss')));
     expect(JSON.stringify(composeSong(1, 'sector'))).not.toBe(JSON.stringify(composeSong(2, 'sector')));
