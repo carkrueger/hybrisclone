@@ -34,10 +34,10 @@ export class StationView {
       l.oy = dy;
       this.layers.push(l);
     };
-    if (preset.shadows) add(baseTiles, 'plates', h + 16 * U, h + 22 * U, DEPTH.stationShadow, 0x000000, 0.5);
-    add(baseTiles, 'plates', h, h, DEPTH.station, tint);
-    if (preset.shadows) add(raisedTiles, 'raised', h + 7 * U, h + 10 * U, DEPTH.raisedShadow, 0x000000, 0.45);
-    add(raisedTiles, 'raised', h, h, DEPTH.raised, tint);
+    if (preset.shadows) add(baseTiles, 'plates_' + level.theme, h + 16 * U, h + 22 * U, DEPTH.stationShadow, 0x000000, 0.5);
+    add(baseTiles, 'plates_' + level.theme, h, h, DEPTH.station, tint);
+    if (preset.shadows) add(raisedTiles, 'raised_' + level.theme, h + 7 * U, h + 10 * U, DEPTH.raisedShadow, 0x000000, 0.45);
+    add(raisedTiles, 'raised_' + level.theme, h, h, DEPTH.raised, tint);
     add(topDown(deco), 'deco', 0, 0, DEPTH.deco, Color.ValueToColor(tint).lighten(8).color);
 
     // containers that move with the station

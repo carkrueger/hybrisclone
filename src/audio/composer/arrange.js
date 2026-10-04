@@ -172,8 +172,18 @@ function bassBar(kind, rng, root, fifth, b) {
 }
 
 // ---------------------------------------------------------------- compose
-export function composeSong(seed, style = 'sector') {
-  const cfg = STYLES[style];
+export function composeSong(seed, style = 'sector', hints = null) {
+  const base = STYLES[style];
+  // theme hints colour the sector music; boss music keeps its driving style but borrows the scales
+  const cfg = hints
+    ? {
+        ...base,
+        scales: style === 'boss' ? [...base.scales, ...hints.scales.slice(0, 1)] : hints.scales,
+        bpm: style === 'boss' ? base.bpm : hints.bpm,
+        leads: hints.leads,
+        basses: style === 'boss' ? base.basses : hints.basses,
+      }
+    : base;
   const rng = new RNG(seed);
   const bpm = rng.int(cfg.bpm[0], cfg.bpm[1]);
   const scaleName = rng.pick(cfg.scales);

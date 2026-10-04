@@ -16,7 +16,7 @@ export function difficulty(sector, level) {
     eliteChance: level === 3 ? Math.min(0.35, 0.1 + 0.03 * D) : Math.min(0.2, 0.02 * D),
     budget: Math.min(110, Math.round(40 + 8 * D)), // max enemy bullets on screen
     telegraph: Math.max(350, Math.round(900 - 40 * D)), // ms of warning before beams/rams
-    bossHp: 1 + 0.18 * D,
+    bossHp: 1 + 0.15 * D,
     bossTempo: Math.max(0.6, 1 - 0.05 * D), // multiplier on boss pauses
   };
 }

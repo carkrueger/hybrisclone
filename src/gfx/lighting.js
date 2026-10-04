@@ -43,12 +43,13 @@ export class LightLayer {
       this.stamp(b.x, b.y, b.homing ? 110 : 80, b.homing ? 0xff9040 : 0xffc060, 0.3);
     });
     n = 0;
-    s.eBullets.forEach((b) => {
+    s.efire.bullets.forEach((b) => {
       if (n++ > 160 || n % 2) return;
       this.stamp(b.x, b.y, 70, 0xff50b0, 0.3);
     });
     // big enemies glow from their engines
-    for (const e of s.enemies) if (e.alive && (e.type === 'bomber' || e.type === 'gunship')) this.stamp(e.x, e.y - 50, 140, 0xff8a30, 0.35);
+    for (const e of s.enemies) if (e.alive && e.r >= 44) this.stamp(e.x, e.y - 50, 140, 0xff8a30, 0.35);
+    for (const b of s.efire.beams) if (b.phase === 'fire') this.stamp(b.x + Math.cos(b.angle) * 300, b.y + Math.sin(b.angle) * 300, 380, b.color, 0.4);
     // decaying lights
     const ms = dt * 1000;
     this.lights = this.lights.filter((l) => (l.life -= ms) > 0);

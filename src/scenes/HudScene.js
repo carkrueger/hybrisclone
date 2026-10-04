@@ -69,8 +69,10 @@ export class HudScene extends Phaser.Scene {
     };
     if (changed('score', s.score)) this.scoreT.setText(pad(s.score));
     if (changed('hi', s.hi)) this.hiT.setText(pad(s.hi));
-    if (changed('sector', s.sector)) this.sectorT.setText(`SECTOR ${s.sector}`);
-    if (changed('seed', s.seed)) this.seedT.setText(`SEED  ${s.seed}`);
+    const tag = (s.round ? `R${s.round + 1} · ` : '') + `SECTOR ${s.sector}-${s.level}`;
+    if (changed('sector', tag)) this.sectorT.setText(tag);
+    const sub = `${s.themeName}  ·  SEED ${s.seed}`;
+    if (changed('seed', sub)) this.seedT.setText(sub);
     if (changed('lives', s.lives) || changed('bombs', s.bombs)) {
       const lives = Math.max(0, s.lives);
       this.lifeIcons.forEach((ic, i) => ic.setVisible(i < Math.min(lives, 5)));
@@ -99,6 +101,7 @@ export class HudScene extends Phaser.Scene {
     this.bossName.setVisible(showBoss);
     if (showBoss) {
       this.bossBar.setSize(Math.max(1, Math.round(632 * s.boss)), 10);
+      this.bossBar.setFillStyle(s.bossShield ? 0x5a9aff : 0xff4a4a);
       if (changed('bossName', s.bossName)) setColor(this.bossName.setText(s.bossName), COLORS.red);
     }
   }

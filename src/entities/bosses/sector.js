@@ -29,7 +29,7 @@ class Crane extends SectorBoss {
     this.mainHull();
     this.core = this.part({ tex: 'boss_core', dx: 0, dy: 40, r: 38, hp: this.data.hp, core: true });
     this.arms = [-1, 1].map((sx) => {
-      const p = this.part({ tex: 'sb_crane_arm', dx: sx * 216, dy: -56, r: 40, hp: Math.round(this.data.hp * 0.3), score: 3000 });
+      const p = this.part({ tex: 'sb_crane_arm', dx: sx * 216, dy: -56, r: 40, hp: Math.round(this.data.hp * 0.2), score: 3000 });
       p.sprite.setOrigin(0.5, 0.04);
       p.side = sx;
       p.angle = 0; // 0 = hanging straight down
@@ -41,7 +41,7 @@ class Crane extends SectorBoss {
       return p;
     });
     this.rails = [-1, 1].map((sx) => {
-      const g = this.part({ tex: 'boss_gun', dx: sx * 150, dy: 110, r: 26, hp: Math.round(this.data.hp * 0.12), score: 1000 });
+      const g = this.part({ tex: 'boss_gun', dx: sx * 150, dy: 110, r: 26, hp: Math.round(this.data.hp * 0.08), score: 1000 });
       g.sprite.setScale(0.8);
       return g;
     });
@@ -238,10 +238,10 @@ class Forge extends SectorBoss {
     this.mainHull();
     this.core = this.part({ tex: 'boss_core', dx: 0, dy: 40, r: 38, hp: this.data.hp, core: true });
     this.core.tint = 0xffb080;
-    this.vents = [-1, 0, 1].map((k) => this.part({ tex: 'sb_forge_vent', dx: k * 170, dy: -110, r: 38, hp: Math.round(this.data.hp * 0.15), score: 1500 }));
+    this.vents = [-1, 0, 1].map((k) => this.part({ tex: 'sb_forge_vent', dx: k * 170, dy: k ? -110 : 150, r: 38, hp: Math.round(this.data.hp * 0.15), score: 1500 }));
   }
   coreArmor() {
-    return this.vents.some((v) => v.alive) ? 0.35 : 1.2;
+    return this.vents.some((v) => v.alive) ? 0.5 : 1.2;
   }
   attacks() {
     return [

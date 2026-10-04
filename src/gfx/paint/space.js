@@ -18,9 +18,10 @@ const smooth = (a, b, x) => {
 };
 
 /** 1920x1080 nebula, tileable in y. Painted at half resolution and scaled up. */
-export function paintNebula(scene, key, seed) {
+export function paintNebula(scene, key, seed, paletteIndex = null) {
   const rng = new RNG(seed);
-  const pal = rng.pick(NEBULA_PALETTES);
+  const picked = rng.pick(NEBULA_PALETTES);
+  const pal = paletteIndex === null ? picked : NEBULA_PALETTES[paletteIndex % NEBULA_PALETTES.length];
   const hw = W / 2;
   const hh = H / 2;
   const cell = 90; // px per lattice cell at half res => 6 cells tall
@@ -93,9 +94,10 @@ const PLANET_KINDS = [
   { a: 0xe06040, b: 0x501810, atm: 0xff9060, ring: true, bands: false },
 ];
 
-export function paintPlanet(scene, key, seed) {
+export function paintPlanet(scene, key, seed, kindIndex = null) {
   const rng = new RNG(seed);
-  const kind = rng.pick(PLANET_KINDS);
+  const picked = rng.pick(PLANET_KINDS);
+  const kind = kindIndex === null ? picked : PLANET_KINDS[kindIndex % PLANET_KINDS.length];
   const R = rng.int(110, 190);
   const size = R * 3.2;
   const { c, ctx } = newCanvas(size, size);

@@ -83,15 +83,32 @@ function paintPlateTiles(scene, key, style) {
               }
             }
             // base metal with grime
-            const gn = noise.fbm((x + v * 61) / 11, (y + mask * 7) / 11, 3);
+            const ns = style.noiseScale || 11;
+            const gn = noise.fbm((x + v * 61) / ns, (y + mask * 7) / ns, 3);
             // per-panel diagonal gradient (cell-local coordinates)
             const cxl = (x + HALF) % T;
             const cyl = (y + HALF) % T;
             const grad = (0.5 - (cxl + cyl) / (2 * T)) * style.panelGrad;
             let col = shade(style.base, (gn - 0.5) * style.grime + grad);
+            // theme surface patterns
+            if (style.pattern === 'organic') {
+              const vn = noise.noise((x + v * 31) / 9, (y + mask * 13) / 9);
+              if (Math.abs(vn - 0.5) < 0.035) col = mix(col, style.vein, 0.75);
+              else if (Math.abs(vn - 0.5) < 0.07) col = shade(col, -0.18);
+            } else if (style.pattern === 'rust') {
+              const dn = noise.noise((x + v * 17) / 5, (y + mask * 11) / 5);
+              if (dn > 0.84) col = shade(col, -0.5);
+              else if (dn < 0.14) col = mix(col, 0xb05a20, 0.55);
+            } else if (style.pattern === 'rock') {
+              if (noise.noise(x / 2.5 + v * 9, y / 2.5 + mask * 5) > 0.9) col = mix(col, 0xd0f4ff, 0.7);
+            } else if (style.pattern === 'foundry') {
+              if (x % 6 === 0 || y % 6 === 0) col = shade(col, -0.22);
+            }
             // cell seams along the tile centre lines
-            if (x === HALF - 1 || y === HALF - 1) col = shade(col, -0.45);
-            else if (x === HALF || y === HALF) col = shade(col, 0.35);
+            if (style.seams !== false) {
+              if (x === HALF - 1 || y === HALF - 1) col = style.seamGlow ? mix(col, style.seamGlow, 0.9) : shade(col, -0.45);
+              else if (x === HALF || y === HALF) col = style.seamGlow ? mix(col, style.seamGlow, 0.5) : shade(col, 0.35);
+            }
             // inner plate bevel, plateInset px in from the cell edges
             const ix = Math.abs(x + 0.5 - HALF);
             const iy = Math.abs(y + 0.5 - HALF);
@@ -104,7 +121,7 @@ function paintPlateTiles(scene, key, style) {
             }
             if (style.stripes && (y + v * 3) % style.stripes === 0) col = shade(col, -0.1);
             // rivets near cell corners (the tile centre)
-            for (const [rx, ry] of [[HALF - 6, HALF - 6], [HALF + 5, HALF - 6], [HALF - 6, HALF + 5], [HALF + 5, HALF + 5]]) {
+            if (style.rivets !== false) for (const [rx, ry] of [[HALF - 6, HALF - 6], [HALF + 5, HALF - 6], [HALF - 6, HALF + 5], [HALF + 5, HALF + 5]]) {
               const dd = (x - rx) ** 2 + (y - ry) ** 2;
               if (dd <= 2) col = shade(col, (x - rx) + (y - ry) < 0 ? 0.55 : -0.35);
             }
@@ -421,6 +438,196 @@ const DECO_PAINT = {
       ctx.fill();
     }
   },
+  // ---------------- theme decorations
+  [DECO.CRYSTAL]: (ctx) => {
+    const shards = [[22, 40, 10, 30, -0.3], [36, 44, 12, 36, 0.15], [46, 46, 8, 22, 0.5], [30, 50, 7, 18, -0.7]];
+    for (const [x, y, w, h, rot] of shards) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      const g = ctx.createLinearGradient(-w, -h, w, 0);
+      g.addColorStop(0, '#f0ffff');
+      g.addColorStop(0.5, '#70d0f8');
+      g.addColorStop(1, '#2a5a90');
+      ctx.beginPath();
+      ctx.moveTo(0, -h);
+      ctx.lineTo(w / 2, -h * 0.4);
+      ctx.lineTo(w / 2, 0);
+      ctx.lineTo(-w / 2, 0);
+      ctx.lineTo(-w / 2, -h * 0.4);
+      ctx.closePath();
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(10,20,40,0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    glowDot(ctx, 34, 34, 22, 0x80e8ff, 0.45);
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  [DECO.ICE_VENT]: (ctx) => {
+    circleBevel(ctx, 32, 32, 24, 0x5a7090);
+    ctx.beginPath();
+    ctx.arc(32, 32, 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#0a1a2a';
+    ctx.fill();
+    for (let a = 0; a < 12; a++) {
+      ctx.fillStyle = 'rgba(220,250,255,0.85)';
+      ctx.fillRect(32 + Math.cos(a / 1.9) * 21 - 1.5, 32 + Math.sin(a / 1.9) * 21 - 1.5, 3, 3);
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    glowDot(ctx, 32, 32, 16, 0x80f0ff, 0.7);
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  [DECO.EGG]: (ctx) => {
+    for (const [x, y, rx, ry] of [[24, 34, 13, 17], [42, 28, 11, 15], [40, 46, 9, 12]]) {
+      const g = ctx.createRadialGradient(x - 4, y - 6, 2, x, y, ry);
+      g.addColorStop(0, '#f8e8ff');
+      g.addColorStop(0.6, '#b090c0');
+      g.addColorStop(1, '#4a2a5a');
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(120,255,140,0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x - rx * 0.5, y - ry * 0.3);
+      ctx.quadraticCurveTo(x, y + 2, x + rx * 0.4, y + ry * 0.5);
+      ctx.stroke();
+    }
+  },
+  [DECO.VEIN]: (ctx) => {
+    ctx.lineCap = 'round';
+    for (const [w, c] of [[14, 'rgba(40,20,50,0.9)'], [9, '#7a4a8a'], [4, '#90ff90']]) {
+      ctx.lineWidth = w;
+      ctx.strokeStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(0, 30);
+      ctx.bezierCurveTo(18, 14, 40, 50, 64, 32);
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    glowDot(ctx, 32, 32, 20, 0x80ff90, 0.35);
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  [DECO.ACID]: (ctx) => {
+    const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 26);
+    g.addColorStop(0, '#e0ff90');
+    g.addColorStop(0.5, '#60d020');
+    g.addColorStop(1, 'rgba(30,80,10,0.0)');
+    ctx.beginPath();
+    ctx.ellipse(32, 34, 26, 20, 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(24, 28, 6, 3, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  },
+  [DECO.LAVA]: (ctx) => {
+    ctx.fillStyle = '#1a0c08';
+    ctx.fillRect(0, 16, 64, 32);
+    const g = ctx.createLinearGradient(0, 20, 0, 44);
+    g.addColorStop(0, '#ff4010');
+    g.addColorStop(0.5, '#ffe080');
+    g.addColorStop(1, '#ff4010');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 22, 64, 20);
+    for (let k = 0; k < 6; k++) {
+      ctx.fillStyle = 'rgba(40,16,8,0.85)';
+      ctx.beginPath();
+      ctx.ellipse(6 + k * 11, 32 + ((k * 7) % 5) - 2, 5, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    glowDot(ctx, 32, 32, 30, 0xff6a20, 0.45);
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  [DECO.CRUCIBLE]: (ctx) => {
+    circleBevel(ctx, 32, 32, 26, 0x4a3a34);
+    const g = ctx.createRadialGradient(30, 30, 2, 32, 32, 18);
+    g.addColorStop(0, '#fff8c0');
+    g.addColorStop(0.5, '#ff9020');
+    g.addColorStop(1, '#801808');
+    ctx.beginPath();
+    ctx.arc(32, 32, 18, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  },
+  [DECO.DEBRIS]: (ctx) => {
+    ctx.fillStyle = 'rgba(20,14,10,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(32, 34, 26, 18, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    for (const [x, y, w, h, r] of [[18, 26, 18, 9, 0.4], [38, 34, 16, 11, -0.6], [28, 44, 12, 7, 1.1]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(r);
+      bevel(ctx, -w / 2, -h / 2, w, h, 0x8a7058);
+      ctx.restore();
+    }
+  },
+  [DECO.BROKEN_PIPE]: (ctx) => {
+    const g = ctx.createLinearGradient(0, 22, 0, 42);
+    g.addColorStop(0, '#3a2a20');
+    g.addColorStop(0.3, '#c8a888');
+    g.addColorStop(1, '#2a1a10');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 22, 34, 20);
+    ctx.beginPath();
+    ctx.moveTo(34, 22);
+    ctx.lineTo(40, 26);
+    ctx.lineTo(36, 32);
+    ctx.lineTo(42, 38);
+    ctx.lineTo(34, 42);
+    ctx.fill();
+    ctx.fillStyle = '#0a0806';
+    ctx.beginPath();
+    ctx.ellipse(37, 32, 3, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(160,140,120,0.6)';
+    ctx.fillRect(46, 30, 8, 4);
+    ctx.fillRect(52, 40, 6, 3);
+  },
+  [DECO.EMBLEM]: (ctx) => {
+    circleBevel(ctx, 32, 32, 26, 0xd8b040);
+    circleBevel(ctx, 32, 32, 20, 0xf0f0f4);
+    ctx.fillStyle = '#c89a28';
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const r = k % 2 ? 7 : 16;
+      const a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+      ctx[k ? 'lineTo' : 'moveTo'](32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+  },
+  [DECO.LIGHT_PANEL]: (ctx) => {
+    bevel(ctx, 8, 8, 48, 48, 0xd8dce6);
+    const g = ctx.createLinearGradient(12, 12, 52, 52);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(1, '#d8e8ff');
+    ctx.fillStyle = g;
+    ctx.fillRect(13, 13, 38, 38);
+    ctx.strokeStyle = 'rgba(200,160,60,0.9)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(13, 13, 38, 38);
+  },
+  [DECO.SPORE]: (ctx) => {
+    for (const [x, y, r] of [[22, 24, 8], [40, 22, 6], [34, 40, 9], [18, 44, 5], [48, 42, 5]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#3a6a3a';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x - r * 0.25, y - r * 0.25, r * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = '#b0ff90';
+      ctx.fill();
+    }
+  },
 };
 
 function lightSocket(ctx, color) {
@@ -564,33 +771,43 @@ function paintRotors(scene) {
   addCanvasTexture(scene, 'dish_head', dish.c);
 }
 
+const PANELS_PLATES = { seed: 101, base: 0x7a8296, wallColor: 0x3e4456, grime: 0.26, panelGrad: 0.32, chamfer: 22, rim: 6, wall: 10, plateInset: 7, wallRibs: 8 };
+const PANELS_RAISED = { seed: 202, base: 0x9aa2b6, wallColor: 0x4a5064, grime: 0.18, panelGrad: 0.22, chamfer: 18, rim: 7, wall: 16, stripes: 6, trim: 0xffb030, wallRibs: 6 };
+
+export const PLATE_STYLES = {
+  shipyard: [PANELS_PLATES, PANELS_RAISED],
+  crystal: [
+    { seed: 303, pattern: 'rock', base: 0x6a7894, wallColor: 0x24304a, grime: 0.7, noiseScale: 18, panelGrad: 0.12, chamfer: 27, rim: 7, wall: 12, seams: false, rivets: false },
+    { seed: 304, pattern: 'rock', base: 0x90a8c8, wallColor: 0x3a5070, grime: 0.55, noiseScale: 14, panelGrad: 0.1, chamfer: 25, rim: 8, wall: 18, seams: false, rivets: false, trim: 0xa0f0ff },
+  ],
+  hive: [
+    { seed: 404, pattern: 'organic', base: 0x6a4a7a, vein: 0x80ff90, wallColor: 0x2a1a38, grime: 0.35, noiseScale: 14, panelGrad: 0.18, chamfer: 30, rim: 8, wall: 12, seams: false, rivets: false },
+    { seed: 405, pattern: 'organic', base: 0x8a68a0, vein: 0xb0ffb0, wallColor: 0x3a2a48, grime: 0.3, noiseScale: 12, panelGrad: 0.16, chamfer: 29, rim: 8, wall: 18, seams: false, rivets: false, trim: 0x90ff90 },
+  ],
+  foundry: [
+    { seed: 505, pattern: 'foundry', base: 0x4e4644, wallColor: 0x241c1a, grime: 0.3, panelGrad: 0.22, chamfer: 20, rim: 6, wall: 10, plateInset: 7, seamGlow: 0xff6a20, wallRibs: 6 },
+    { seed: 506, pattern: 'foundry', base: 0x645a56, wallColor: 0x342824, grime: 0.24, panelGrad: 0.2, chamfer: 18, rim: 7, wall: 16, stripes: 6, seamGlow: 0xff8a30, trim: 0xff7020, wallRibs: 6 },
+  ],
+  graveyard: [
+    { seed: 606, pattern: 'rust', base: 0x7a6450, wallColor: 0x3a2a1e, grime: 0.5, panelGrad: 0.25, chamfer: 22, rim: 6, wall: 10, plateInset: 7, wallRibs: 8 },
+    { seed: 607, pattern: 'rust', base: 0x8a7460, wallColor: 0x4a3828, grime: 0.45, panelGrad: 0.2, chamfer: 18, rim: 7, wall: 16, stripes: 6, trim: 0xb0a040, wallRibs: 6 },
+  ],
+  citadel: [
+    { seed: 707, base: 0xa4a8b6, wallColor: 0x6a7080, grime: 0.06, panelGrad: 0.24, chamfer: 22, rim: 6, wall: 10, plateInset: 7, seamGlow: 0xd0a030, wallRibs: 8 },
+    { seed: 708, base: 0xc0c4d0, wallColor: 0x7a8090, grime: 0.05, panelGrad: 0.18, chamfer: 18, rim: 7, wall: 16, seamGlow: 0xe0b040, trim: 0xe0b040, wallRibs: 6 },
+  ],
+};
+
+/** paint (once) the plate and raised tilesets of a theme: plates_<id>, raised_<id> */
+export function ensureThemeTiles(scene, themeId) {
+  const [plates, raised] = PLATE_STYLES[themeId] || PLATE_STYLES.shipyard;
+  if (!scene.textures.exists('plates_' + themeId)) paintPlateTiles(scene, 'plates_' + themeId, plates);
+  if (!scene.textures.exists('raised_' + themeId)) paintPlateTiles(scene, 'raised_' + themeId, raised);
+}
+
 export function paintStation(scene) {
   paintRotors(scene);
-  paintPlateTiles(scene, 'plates', {
-    seed: 101,
-    base: 0x7a8296,
-    wallColor: 0x3e4456,
-    grime: 0.26,
-    panelGrad: 0.32,
-    chamfer: 22,
-    rim: 6,
-    wall: 10,
-    plateInset: 7,
-    wallRibs: 8,
-  });
-  paintPlateTiles(scene, 'raised', {
-    seed: 202,
-    base: 0x9aa2b6,
-    wallColor: 0x4a5064,
-    grime: 0.18,
-    panelGrad: 0.22,
-    chamfer: 18,
-    rim: 7,
-    wall: 16,
-    stripes: 6,
-    trim: 0xffb030,
-    wallRibs: 6,
-  });
+  ensureThemeTiles(scene, 'shipyard');
   paintDeco(scene);
   paintMid(scene);
 }

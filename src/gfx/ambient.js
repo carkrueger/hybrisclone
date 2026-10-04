@@ -2,6 +2,14 @@
 // steam/smoke from vents and cooling towers, and maintenance drones.
 import Phaser from 'phaser';
 import { W, H, DEPTH, SCROLL_SPEED, MEGA_PARALLAX, TILE } from '../config.js';
+import { THEMES } from '../level/themes.js';
+
+const FLAVORS = {
+  glitter: { tex: 'spark', frequency: 40, lifespan: { min: 300, max: 900 }, scale: { start: 1.2, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xc0f8ff, 0xb0a0ff, 0xffffff], speedY: { min: 10, max: 40 } },
+  spores: { tex: 'glow', frequency: 90, lifespan: { min: 3000, max: 5500 }, scale: { start: 0.05, end: 0.14 }, alpha: { start: 0.7, end: 0 }, tint: [0x80ff90, 0xc0ff80, 0xff80e0], speedX: { min: -30, max: 30 }, speedY: { min: -40, max: 10 } },
+  embers: { tex: 'spark', frequency: 30, lifespan: { min: 1500, max: 3000 }, scale: { start: 1.1, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffd060, 0xff8030, 0xff4010], speedX: { min: -30, max: 30 }, speedY: { min: -140, max: -50 } },
+  debris: { tex: 'debris1', frequency: 220, lifespan: { min: 5000, max: 8000 }, scale: { start: 1.6, end: 1.2 }, alpha: { start: 0.7, end: 0 }, rotate: { start: 0, end: 360 }, tint: 0x9a9080, speedX: { min: -20, max: 20 }, speedY: { min: 40, max: 90 } },
+};
 
 const ADD = Phaser.BlendModes.ADD;
 
@@ -13,7 +21,16 @@ export class AmbientView {
     this.objects = [];
     if (!this.enabled) return;
     const amb = level.ambient;
-    this.traffic = amb.traffic;
+    const theme = THEMES.find((t) => t.id === level.theme) || THEMES[0];
+    this.traffic = theme.ambient.traffic ? amb.traffic : [];
+    const fl = FLAVORS[theme.ambient.particles];
+    if (fl) {
+      const { tex, ...cfg } = fl;
+      this.flavor = scene.add
+        .particles(0, 0, tex, { ...cfg, blendMode: tex === 'debris1' ? Phaser.BlendModes.NORMAL : ADD, emitZone: { type: 'random', source: new Phaser.Geom.Rectangle(0, -40, W, H + 40) } })
+        .setDepth(DEPTH.lights + 0.5);
+      this.objects.push(this.flavor);
+    }
     this.tIdx = 0;
     this.convoys = [];
 

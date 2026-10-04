@@ -156,13 +156,13 @@ class AudioSystem {
     return !!(p && !p.stream.buffers[0]);
   }
 
-  stream(style, seed) {
+  stream(style, seed, hints = null) {
     const key = `${style}:${seed}`;
     let s = this.streams.get(key);
     if (s) {
       this.streams.delete(key);
     } else {
-      const song = style === 'jingle' ? JINGLES[seed]() : composeSong(seed, style);
+      const song = style === 'jingle' ? JINGLES[seed]() : composeSong(seed, style, hints);
       s = new Stream(this, key, song);
     }
     this.streams.set(key, s); // LRU order
@@ -175,8 +175,8 @@ class AudioSystem {
   }
 
   /** start rendering the first sections in the background */
-  prepare(style, seed) {
-    const s = this.stream(style, seed);
+  prepare(style, seed, hints = null) {
+    const s = this.stream(style, seed, hints);
     s.request(0, 3);
     s.request(1, 4);
     return s;
@@ -186,8 +186,8 @@ class AudioSystem {
     this.prepare('title', TITLE_SEED);
   }
 
-  prepareBoss(seed) {
-    this.prepare('boss', seed);
+  prepareBoss(seed, hints = null) {
+    this.prepare('boss', seed, hints);
   }
 
   // ------------------------------------------------------------ playback
@@ -274,12 +274,12 @@ class AudioSystem {
     this.play(this.stream('title', TITLE_SEED));
   }
 
-  playSector(seed) {
-    this.play(this.stream('sector', seed));
+  playSector(seed, hints = null) {
+    this.play(this.stream('sector', seed, hints));
   }
 
-  playBoss(seed) {
-    this.play(this.stream('boss', seed), { fade: 0.2 });
+  playBoss(seed, hints = null) {
+    this.play(this.stream('boss', seed, hints), { fade: 0.2 });
   }
 
   playJingle(name, onEnd) {

@@ -419,7 +419,158 @@ function dock(scene, key, obj) {
   return finish(scene, key, c, { lights, engines: [] });
 }
 
-const PAINTERS = { battleship, carrier, ring, dock };
+
+// ---------------------------------------------------------------- asteroid (crystal mines)
+function asteroid(scene, key, obj) {
+  const rng = new RNG(obj.seed);
+  const noise = new ValueNoise(rng.nextU32());
+  const s = obj.scale;
+  const size = Math.round(rng.range(380, 620) * s);
+  const c = setup(key, size, size);
+  const { ctx, l, cx, cy } = c;
+  const R = size / 2 - 20;
+  const img = ctx.createImageData(size, size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = (x - cx) / R;
+      const dy = (y - cy) / R;
+      const a = Math.atan2(dy, dx);
+      const edge = 0.82 + noise.fbm(Math.cos(a) * 2 + 5, Math.sin(a) * 2 + 5, 3) * 0.3;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d > edge) continue;
+      const n = noise.fbm(x / 40, y / 40, 4);
+      const light = Math.max(0.15, 1 - (dx + dy + 1) * 0.35) * (0.6 + n * 0.7) * (d > edge - 0.04 ? 0.5 : 1);
+      const crater = noise.noise(x / 22 + 9, y / 22 + 3) > 0.78 ? 0.6 : 1;
+      const i = (y * size + x) * 4;
+      img.data[i] = 80 * light * crater;
+      img.data[i + 1] = 90 * light * crater;
+      img.data[i + 2] = 110 * light * crater;
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  // crystal veins (lit layer)
+  const lights = [];
+  for (let k = 0; k < rng.int(5, 10); k++) {
+    const a = rng.range(0, Math.PI * 2);
+    const r = rng.range(0, R * 0.6);
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    l.globalCompositeOperation = 'lighter';
+    glowDot(l, x, y, rng.range(10, 26), rng.pick([0x80e8ff, 0xb090ff]), 0.7);
+    if (k % 2) lights.push({ x, y, color: 0x80e8ff, rate: 0.002, size: 0.4 });
+  }
+  return finish(scene, key, c, { lights, engines: [], spin: rng.range(0.01, 0.03) * (rng.chance(0.5) ? 1 : -1) });
+}
+
+// ---------------------------------------------------------------- hive ship (organic)
+function hiveship(scene, key, obj) {
+  const rng = new RNG(obj.seed);
+  const noise = new ValueNoise(rng.nextU32());
+  const s = obj.scale;
+  const c = setup(key, Math.round(460 * s), Math.round(1100 * s));
+  const { ctx, l, w, h, cx } = c;
+  const segs = rng.int(5, 8);
+  const lights = [];
+  for (let k = segs - 1; k >= 0; k--) {
+    const y = 60 + (k / segs) * (h - 160);
+    const rx = (w / 2 - 30) * (0.55 + 0.45 * Math.sin((k / segs) * Math.PI));
+    const ry = (h / segs) * 0.75;
+    paintMaterial(ctx, () => {
+      ctx.beginPath();
+      ctx.ellipse(cx, y + ry, rx, ry, 0, 0, Math.PI * 2);
+    }, { x0: cx - rx, y0: y, x1: cx + rx, y1: y + ry * 2 }, { base: k % 2 ? 0x5a3a6a : 0x6a4a7a, sheen: true }, { rim: 5, outline: 2 });
+    for (const sx of [-1, 1]) {
+      l.globalCompositeOperation = 'lighter';
+      glowDot(l, cx + sx * rx * 0.6, y + ry, 14, 0x80ff90, 0.8);
+      lights.push({ x: cx + sx * rx * 0.6, y: y + ry, color: 0x80ff90, rate: 0.0015, size: 0.45, phase: k });
+    }
+  }
+  grime(ctx, w, h, noise, 0.4);
+  return finish(scene, key, c, { lights, engines: [] });
+}
+
+// ---------------------------------------------------------------- smelter tower (foundry)
+function smelter(scene, key, obj) {
+  const rng = new RNG(obj.seed);
+  const noise = new ValueNoise(rng.nextU32());
+  const s = obj.scale;
+  const c = setup(key, Math.round(520 * s), Math.round(900 * s));
+  const { ctx, l, w, h, cx } = c;
+  const body = [[0, 20], [w * 0.3, 20], [w * 0.42, 120], [w * 0.46, h - 120], [w * 0.36, h - 30], [0, h - 20]];
+  paintMaterial(ctx, () => mirroredPath(ctx, body, cx, 0), { x0: 0, y0: 0, x1: w, y1: h }, { base: 0x4a403c, sheen: true }, { rim: 6, outline: 3 });
+  const lights = [];
+  for (let y = 120; y < h - 120; y += rng.int(60, 110)) {
+    l.globalCompositeOperation = 'lighter';
+    l.fillStyle = 'rgba(255,110,30,0.85)';
+    l.fillRect(cx - w * 0.36, y, w * 0.72, 4);
+    glowDot(l, cx, y, 50, 0xff6a20, 0.35);
+  }
+  for (const sx of [-1, 1]) {
+    paintMaterial(ctx, () => roundRect(ctx, cx + sx * w * 0.2 - 30, 0, 60, 120, 8), { x0: cx + sx * w * 0.2 - 30, y0: 0, x1: cx + sx * w * 0.2 + 30, y1: 120 }, { base: 0x3a3230 }, { rim: 3 });
+    lights.push({ x: cx + sx * w * 0.2, y: 8, color: 0xff7020, rate: 0.003, size: 0.8 });
+  }
+  grime(ctx, w, h, noise, 0.35);
+  windows(l, rng, noise, (x, y) => Math.abs(x - cx) < w * 0.3, 0, w, 140, h - 140, { warm: 1, density: 0.4 });
+  return finish(scene, key, c, { lights, engines: [] });
+}
+
+// ---------------------------------------------------------------- wreck (graveyard)
+function wreck(scene, key, obj) {
+  const info = battleship(scene, key, { ...obj, kind: 'battleship' });
+  // punch holes, burn marks and a broken stern into the painted hull
+  const tex = scene.textures.get(key).getSourceImage();
+  const ctx = tex.getContext('2d');
+  const rng = new RNG(obj.seed ^ 0x5a5a);
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillRect(0, tex.height * rng.range(0.7, 0.85), tex.width, tex.height);
+  for (let k = 0; k < 8; k++) {
+    ctx.beginPath();
+    ctx.arc(rng.range(0, tex.width), rng.range(0, tex.height * 0.75), rng.range(10, 36), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.fillStyle = 'rgba(40,60,40,0.35)';
+  ctx.fillRect(0, 0, tex.width, tex.height);
+  ctx.globalCompositeOperation = 'source-over';
+  scene.textures.get(key).refresh();
+  const lit = scene.textures.get(key + '_lit').getSourceImage().getContext('2d');
+  lit.clearRect(0, tex.height * 0.6, tex.width, tex.height);
+  const fires = [];
+  for (let k = 0; k < 4; k++) {
+    const x = rng.range(tex.width * 0.25, tex.width * 0.75) - tex.width / 2;
+    const y = rng.range(tex.height * 0.1, tex.height * 0.65) - tex.height / 2;
+    fires.push({ x, y, color: 0xff7030, rate: 0.009, size: 0.5, phase: k });
+  }
+  scene.textures.get(key + '_lit').refresh();
+  return { ...info, engines: [], lights: fires.concat(info.lights.filter((l) => l.y < tex.height * 0.1)) };
+}
+
+// ---------------------------------------------------------------- spire (citadel)
+function spire(scene, key, obj) {
+  const rng = new RNG(obj.seed);
+  const noise = new ValueNoise(rng.nextU32());
+  const s = obj.scale;
+  const c = setup(key, Math.round(420 * s), Math.round(1250 * s));
+  const { ctx, l, w, h, cx } = c;
+  const pts = [[0, 10], [w * 0.08, 160], [w * 0.3, 420], [w * 0.45, 700], [w * 0.3, h - 160], [w * 0.12, h - 20], [0, h - 10]];
+  paintMaterial(ctx, () => mirroredPath(ctx, pts, cx, 0), { x0: 0, y0: 0, x1: w, y1: h }, { base: 0xc8ccd8, sheen: true }, { rim: 6, outline: 3 });
+  ctx.strokeStyle = '#c89a28';
+  ctx.lineWidth = 4;
+  for (let y = 300; y < h - 200; y += 120) {
+    ctx.beginPath();
+    ctx.moveTo(cx - w * 0.36, y);
+    ctx.lineTo(cx + w * 0.36, y);
+    ctx.stroke();
+  }
+  grime(ctx, w, h, noise, 0.08);
+  windows(l, rng, noise, (x, y) => Math.abs(x - cx) < w * 0.25, 0, w, 200, h - 200, { warm: 0.4, density: 0.7 });
+  const lights = [{ x: cx, y: 12, color: 0xffffff, rate: 0.005, size: 0.7 }];
+  for (let y = 300; y < h - 200; y += 240) for (const sx of [-1, 1]) lights.push({ x: cx + sx * w * 0.3, y, color: 0xffd060, rate: 0.003, size: 0.4, phase: y });
+  return finish(scene, key, c, { lights, engines: [{ x: cx, y: h - 8, r: 30 }] });
+}
+
+const PAINTERS = { battleship, carrier, ring, dock, asteroid, hiveship, smelter, wreck, spire };
 
 export function paintMega(scene, key, obj) {
   return PAINTERS[obj.kind](scene, key, obj);

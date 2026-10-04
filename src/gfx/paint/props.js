@@ -30,6 +30,29 @@ function hazardRing(ctx, x, y, r0, r1) {
   ctx.restore();
 }
 
+function crystalShard(ctx, x, y, w, h, rot, light = '#f0ffff', mid = '#70c8f0', dark = '#203a70') {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  const g = ctx.createLinearGradient(-w, -h, w, 0);
+  g.addColorStop(0, light);
+  g.addColorStop(0.5, mid);
+  g.addColorStop(1, dark);
+  ctx.beginPath();
+  ctx.moveTo(0, -h);
+  ctx.lineTo(w / 2, -h * 0.35);
+  ctx.lineTo(w / 2, 0);
+  ctx.lineTo(-w / 2, 0);
+  ctx.lineTo(-w / 2, -h * 0.35);
+  ctx.closePath();
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(10,20,40,0.85)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
 const PAINTERS = {
   dome(ctx, w, h) {
     const cx = w / 2;
@@ -182,6 +205,111 @@ const PAINTERS = {
       ctx.stroke();
     }
   },
+  spire(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(cx + 8, cy + 14, 52, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+    crystalShard(ctx, cx - 26, cy + 30, 22, 50, -0.45);
+    crystalShard(ctx, cx + 28, cy + 34, 20, 44, 0.5);
+    crystalShard(ctx, cx, cy + 40, 34, 92, 0.05);
+    crystalShard(ctx, cx - 6, cy + 46, 16, 36, -0.9, '#ffffff', '#b0a0ff', '#40307a');
+    ctx.globalCompositeOperation = 'lighter';
+    glowDot(ctx, cx, cy, 50, 0x80e8ff, 0.4);
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  eggs(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.fillStyle = 'rgba(30,10,40,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 6, 58, 50, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const [x, y, rx, ry] of [[-22, -12, 22, 28], [20, -16, 20, 26], [0, 18, 24, 30], [-30, 26, 14, 18], [32, 24, 15, 19]]) {
+      const g = ctx.createRadialGradient(cx + x - 6, cy + y - 8, 2, cx + x, cy + y, ry);
+      g.addColorStop(0, '#fff0ff');
+      g.addColorStop(0.55, '#b890c8');
+      g.addColorStop(1, '#40204a');
+      ctx.beginPath();
+      ctx.ellipse(cx + x, cy + y, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(120,255,150,0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  },
+  smelter(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    const oct = () => {
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 + Math.PI / 8;
+        ctx[k ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * 90, cy + Math.sin(a) * 90);
+      }
+      ctx.closePath();
+    };
+    paintMaterial(ctx, oct, box(cx, cy, 90), { base: 0x4a403c }, { rim: 4 });
+    paintMaterial(ctx, circle(ctx, cx, cy, 58), box(cx, cy, 58), { base: 0x6a5a52, sheen: true }, { rim: 4 });
+    const g = ctx.createRadialGradient(cx - 6, cy - 6, 4, cx, cy, 42);
+    g.addColorStop(0, '#fffad0');
+    g.addColorStop(0.35, '#ffb030');
+    g.addColorStop(0.8, '#c02808');
+    g.addColorStop(1, '#300800');
+    ctx.beginPath();
+    ctx.arc(cx, cy, 42, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+      paintMaterial(ctx, () => roundRect(ctx, cx + Math.cos(a) * 74 - 9, cy + Math.sin(a) * 74 - 9, 18, 18, 3), box(cx + Math.cos(a) * 74, cy + Math.sin(a) * 74, 9), DARKM, { rim: 1.5, outline: 1.5 });
+    }
+  },
+  hullpiece(ctx, w, h) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 + 8, h / 2 + 10, w * 0.46, h * 0.42, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    const pts = [[14, 30], [70, 10], [150, 18], [184, 50], [170, 104], [96, 118], [30, 100]];
+    const path = () => {
+      ctx.beginPath();
+      pts.forEach(([x, y], k) => ctx[k ? 'lineTo' : 'moveTo'](x, y));
+      ctx.closePath();
+    };
+    paintMaterial(ctx, path, { x0: 14, y0: 10, x1: 184, y1: 118 }, { base: 0x6a5a48, sheen: true }, { rim: 4 });
+    for (let x = 40; x < 170; x += 26) panelLine(ctx, x, 22, x - 10, 108, 0.5);
+    for (const [x, y, r] of [[70, 60, 16], [130, 80, 11], [150, 40, 8]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#0a0806';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,140,60,0.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  },
+  obelisk(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(cx - 40, cy - 30, 96, 100);
+    paintMaterial(ctx, () => roundRect(ctx, cx - 50, cy - 50, 100, 100, 10), box(cx, cy, 50), { base: 0xe0e2ea, sheen: true }, { rim: 4 });
+    const pyr = () => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 34);
+      ctx.lineTo(cx + 34, cy);
+      ctx.lineTo(cx, cy + 34);
+      ctx.lineTo(cx - 34, cy);
+      ctx.closePath();
+    };
+    paintMaterial(ctx, pyr, box(cx, cy, 34), { base: 0xd8b040, sheen: true }, { rim: 3 });
+    ctx.globalCompositeOperation = 'lighter';
+    glowDot(ctx, cx, cy, 20, 0xffe080, 0.7);
+    ctx.globalCompositeOperation = 'source-over';
+  },
   tanks(ctx, w, h) {
     for (const x of [w * 0.28, w * 0.72]) {
       const tw = 46;
@@ -224,6 +352,11 @@ export const PROP_ANCHORS = {
   },
   tower: { glows: [], steam: [{ x: 64, y: 64 }] },
   tanks: { glows: [{ x: 64, y: 10, color: 0xff3030, mode: 'blink', scale: 0.3 }] },
+  spire: { glows: [{ x: 64, y: 60, color: 0x80e8ff, mode: 'pulse', scale: 0.9 }] },
+  eggs: { glows: [{ x: 64, y: 70, color: 0x80ff90, mode: 'pulse', scale: 0.8 }] },
+  smelter: { glows: [{ x: 96, y: 96, color: 0xff8a30, mode: 'pulse', scale: 1.6 }], steam: [{ x: 96, y: 96 }] },
+  hullpiece: { glows: [{ x: 70, y: 60, color: 0xff7030, mode: 'blink', scale: 0.4 }] },
+  obelisk: { glows: [{ x: 64, y: 64, color: 0xffe080, mode: 'pulse', scale: 0.9 }] },
 };
 
 export function paintProps(scene) {

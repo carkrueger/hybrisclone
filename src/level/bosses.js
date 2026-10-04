@@ -50,7 +50,7 @@ export function generateBoss(rng, { kind, mid, diff, theme }) {
     theme: theme.id,
     name,
     hull,
-    hp: Math.round((mid ? 90 : 260) * diff.bossHp),
+    hp: Math.round((mid ? 75 : 140) * diff.bossHp),
     tempo: diff.bossTempo,
     telegraph: diff.telegraph,
     bulletSpeed: Math.min(210, 100 + diff.D * 8),

@@ -1,0 +1,20 @@
+HYBRISCLONE - TODO
+==================
+
+More weapon types / specials
+----------------------------
+- Orbiting ball: an indestructible orb circling the ship that damages enemies
+  on contact and absorbs enemy bullets.
+- Side-ship (option / wingman): small escort ship docked beside the player
+  with its own weapon; follows the player with a slight delay.
+- Homing missiles: as a selectable weapon type of their own (currently only a
+  rung on the power ladder in src/entities/weapons.js).
+- Laser weapon: continuous piercing beam, damage ramps up while held on target.
+- Point defense: auto-turret that shoots down nearby enemy bullets/missiles.
+- etc.: further specials (e.g. charge shot, shield burst, smart bomb variants).
+
+Notes
+-----
+- Weapons live in src/entities/weapons.js (LADDER / WeaponSystem); pods in
+  GameScene (spawnPod / pickups). New weapon types likely need their own
+  pickup letters and HUD indicators.

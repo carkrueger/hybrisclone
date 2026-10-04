@@ -35,7 +35,7 @@ class MidBoss extends BossBase {
     return c;
   }
 
-  gun(dx, dy, hpMul = 0.16, tint = null) {
+  gun(dx, dy, hpMul = 0.14, tint = null) {
     const g = this.part({ tex: 'boss_gun', dx, dy, r: 26, hp: Math.round(this.data.hp * hpMul), score: 800 });
     g.sprite.setScale(0.85);
     if (tint) g.tint = tint;
@@ -102,7 +102,7 @@ class Charger extends MidBoss {
     this.mode = 'idle';
   }
   coreArmor() {
-    return this.mode === 'rest' ? 1.6 : this.mode === 'ram' ? 0.3 : 1;
+    return this.mode === 'rest' ? 1.2 : this.mode === 'ram' ? 0.3 : 1;
   }
   move(dt, now) {
     if (this.mode === 'ram') {

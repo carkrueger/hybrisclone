@@ -2,6 +2,7 @@
 // Each patch: (ctx, out, note, t, dur, kit) where note = { n: midi, v, slide, arp }.
 
 export const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+const nyq = (ctx, f) => Math.min(f, ctx.sampleRate * 0.45);
 
 function adsr(param, t, dur, { a = 0.005, d = 0.1, s = 0.7, r = 0.1, peak = 1 }) {
   param.setValueAtTime(0, t);
@@ -46,9 +47,9 @@ const PATCHES = {
     const filt = ctx.createBiquadFilter();
     filt.type = 'lowpass';
     filt.Q.value = 1.2;
-    filt.frequency.setValueAtTime(f * 3, t);
-    filt.frequency.linearRampToValueAtTime(Math.min(12000, f * 9), t + 0.04);
-    filt.frequency.setTargetAtTime(f * 5, t + 0.05, 0.25);
+    filt.frequency.setValueAtTime(nyq(ctx, f * 3), t);
+    filt.frequency.linearRampToValueAtTime(nyq(ctx, f * 9), t + 0.04);
+    filt.frequency.setTargetAtTime(nyq(ctx, f * 5), t + 0.05, 0.25);
     const stop = adsr(amp.gain, t, dur, { a: 0.01, d: 0.25, s: 0.75, r: 0.18, peak: 0.16 * v });
     const oscs = [-16, -8, 0, 8, 16].map((dt) => osc(ctx, 'sawtooth', f, t, dt));
     if (note.slide) for (const o of oscs) glide(o, mtof(note.slide), f, t);
@@ -100,8 +101,8 @@ const PATCHES = {
     const filt = ctx.createBiquadFilter();
     filt.type = 'lowpass';
     filt.Q.value = 2;
-    filt.frequency.setValueAtTime(f * 8, t);
-    filt.frequency.setTargetAtTime(f * 2.5, t, 0.08);
+    filt.frequency.setValueAtTime(nyq(ctx, f * 8), t);
+    filt.frequency.setTargetAtTime(nyq(ctx, f * 2.5), t, 0.08);
     const stop = adsr(amp.gain, t, dur, { a: 0.003, d: 0.15, s: 0.55, r: 0.05, peak: 0.28 * (note.v ?? 1) });
     const o1 = osc(ctx, 'square', f, t);
     const o2 = osc(ctx, 'sine', f / 2, t);
@@ -161,8 +162,8 @@ const PATCHES = {
     const filt = ctx.createBiquadFilter();
     filt.type = 'lowpass';
     filt.Q.value = 3;
-    filt.frequency.setValueAtTime(Math.min(10000, f * 10), t);
-    filt.frequency.setTargetAtTime(f * 1.5, t, 0.06);
+    filt.frequency.setValueAtTime(nyq(ctx, f * 10), t);
+    filt.frequency.setTargetAtTime(nyq(ctx, f * 1.5), t, 0.06);
     amp.gain.setValueAtTime(0, t);
     amp.gain.linearRampToValueAtTime(0.13 * (note.v ?? 1), t + 0.003);
     amp.gain.setTargetAtTime(0, t + 0.01, Math.min(0.2, dur * 0.5));

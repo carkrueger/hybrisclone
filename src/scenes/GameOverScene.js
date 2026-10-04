@@ -21,6 +21,8 @@ export class GameOverScene extends Phaser.Scene {
 
   create() {
     const { score, seed, sector } = this.result;
+    this.result.level = this.result.level || 0;
+    this.stageTag = `${sector + 1}-${this.result.level + 1}`;
     this.controls = new InputManager(this);
     this.controls.latch();
     this.add.tileSprite(0, 0, W, H, 'nebula_title').setOrigin(0).setAlpha(0.7);
@@ -28,7 +30,7 @@ export class GameOverScene extends Phaser.Scene {
 
     text(this, W / 2, 120, 'GAME OVER', { size: 120, color: COLORS.red, spacing: 10 });
     text(this, W / 2, 230, 'SCORE  ' + pad(score), { size: 48 });
-    text(this, W / 2, 285, `REACHED SECTOR ${sector + 1}     SEED ${seed}`, { size: 24, font: 'body', color: COLORS.grey, glow: false });
+    text(this, W / 2, 285, `REACHED SECTOR ${this.stageTag}     SEED ${seed}`, { size: 24, font: 'body', color: COLORS.grey, glow: false });
 
     this.items = [];
     audio.playJingle('gameOver');
@@ -114,7 +116,7 @@ export class GameOverScene extends Phaser.Scene {
     if (this.state !== 'name') return;
     const name = this.name.join('').trim() || 'PLAYER';
     const { score, seed, sector } = this.result;
-    const rank = storage.addHighScore({ name, score, seed, sector: sector + 1 });
+    const rank = storage.addHighScore({ name, score, seed, sector: this.stageTag });
     storage.setLastName(name);
     audio.sfx('menuSelect');
     this.controls.typing = false;
@@ -136,7 +138,7 @@ export class GameOverScene extends Phaser.Scene {
     this.countdown = CONTINUE_SECONDS + 0.999;
     this.contT = text(this, W / 2, 850, '', { size: 56, color: COLORS.orange });
     this.items.push(this.contT);
-    this.items.push(text(this, W / 2, 920, `FIRE / CLICK: CONTINUE AT SECTOR ${this.result.sector + 1}`, { size: 26 }));
+    this.items.push(text(this, W / 2, 920, `FIRE / CLICK: CONTINUE AT SECTOR ${this.stageTag}`, { size: 26 }));
     this.items.push(text(this, W / 2, 960, '(SCORE RESETS)     ESC / B: TITLE', { size: 22, font: 'body', color: COLORS.dim, glow: false }));
     this.time.delayedCall(250, () => {
       this.input.once('pointerdown', () => this.continueGame());
@@ -147,9 +149,9 @@ export class GameOverScene extends Phaser.Scene {
     if (this.state !== 'continue') return;
     this.state = 'leaving';
     audio.stopMusic(0.1);
-    const { seed, sector, continues } = this.result;
+    const { seed, sector, level, continues } = this.result;
     this.cameras.main.fadeOut(300);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Game', { seed, sector, continues: (continues || 0) + 1 }));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Game', { seed, sector, level, continues: (continues || 0) + 1 }));
   }
 
   toTitle() {

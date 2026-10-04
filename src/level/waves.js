@@ -40,7 +40,7 @@ function makeWave(rng, type, pattern, d, region, diff, mirrorOf = null) {
       p.speed = r(rng, 55, 80);
       break;
     case 'swoop':
-      interval = rng.int(340, 440);
+      interval = rng.int(460, 600);
       p.side = rng.chance(0.5) ? -1 : 1;
       p.x0 = p.side < 0 ? x0 : x1;
       p.x2 = p.side < 0 ? x1 : x0;
