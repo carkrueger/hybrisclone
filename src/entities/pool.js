@@ -1,8 +1,9 @@
 // Image pool with a free list: bullets and similar short-lived sprites.
 export class SpritePool {
-  constructor(scene, depth) {
+  constructor(scene, depth, blendMode = 0) {
     this.scene = scene;
     this.depth = depth;
+    this.blendMode = blendMode;
     this.items = [];
     this.free = [];
   }
@@ -10,7 +11,7 @@ export class SpritePool {
   get(tex, x, y) {
     let s = this.free.pop();
     if (!s) {
-      s = this.scene.add.image(x, y, tex).setDepth(this.depth);
+      s = this.scene.add.image(x, y, tex).setDepth(this.depth).setBlendMode(this.blendMode);
       this.items.push(s);
     }
     s.setTexture(tex).setPosition(x, y).setActive(true).setVisible(true);

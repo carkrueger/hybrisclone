@@ -74,13 +74,29 @@ export function generateBoss(rng, sector) {
     );
   }
 
+  const move = rng.pick(['sway', 'figure8', 'drift']);
+  const moveSpeed = rng.range(0.6, 1.1) + sector * 0.05;
+  // sliding armour plates over the core (drawn after the rest so earlier data is unchanged)
+  const plates = [];
+  const plateCount = rng.int(1, 2);
+  for (let k = 0; k < plateCount; k++) {
+    plates.push({
+      w: rng.int(11, 15),
+      h: rng.int(8, 11),
+      y: coreY + (plateCount === 1 ? 0 : k ? 6 : -6),
+      period: rng.int(3200, 5200),
+      phase: Math.round(rng.range(0, 6.28) * 100) / 100,
+    });
+  }
+
   return {
     name,
     hull: { w, h, profile, colors },
+    plates,
     core: { x: 0, y: coreY, hp: 150 + sector * 75 },
     guns,
-    move: rng.pick(['sway', 'figure8', 'drift']),
-    moveSpeed: rng.range(0.6, 1.1) + sector * 0.05,
+    move,
+    moveSpeed,
     phases,
     bulletSpeed: Math.min(200, 95 + sector * 12),
     score: 10000 + sector * 5000,

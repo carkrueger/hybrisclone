@@ -52,7 +52,7 @@ export const storage = {
     return { music: 0.6, sfx: 0.7, ...read('settings', {}) };
   },
   saveSettings(settings) {
-    write('settings', settings);
+    write('settings', { ...read('settings', {}), ...settings });
   },
   getLastSeed() {
     return read('lastSeed', 'HYBRIS');

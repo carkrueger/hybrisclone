@@ -1,12 +1,17 @@
 import Phaser from 'phaser';
-import { W, H, SEED_MAX_LEN, SEED_CHARS } from '../config.js';
+import { W, H, SEED_MAX_LEN, SEED_CHARS, DEPTH } from '../config.js';
 import { InputManager } from '../core/input.js';
 import { storage } from '../core/storage.js';
+import { settings } from '../core/settings.js';
 import { normalizeSeed, randomSeedString } from '../core/rng.js';
-import { DEFAULT_SEED } from '../level/generator.js';
+import { DEFAULT_SEED, generateSector } from '../level/generator.js';
+import { StationView } from '../gfx/stationView.js';
+import { MegaView } from '../gfx/megaView.js';
+import { AmbientView } from '../gfx/ambient.js';
+import { applyPost } from '../gfx/post.js';
 import { audio } from '../audio/index.js';
 import { Menu } from '../ui/menu.js';
-import { text, gradientTitle, pad, COLORS } from '../ui/text.js';
+import { text, logo, pad, COLORS } from '../ui/text.js';
 import { onTypedKey } from '../ui/typing.js';
 
 const CONTROLS_HELP = [
@@ -15,18 +20,18 @@ const CONTROLS_HELP = [
   ['FIRE', 'SPACE / Z  (HOLD)'],
   ['BOMB', 'X / SHIFT'],
   ['PAUSE', 'ESC / P'],
-  ['', ''],
   ['', 'MOUSE'],
   ['MOVE', 'SHIP FOLLOWS POINTER'],
   ['FIRE', 'LEFT BUTTON (HOLD)'],
   ['BOMB', 'RIGHT BUTTON'],
-  ['', ''],
   ['', 'GAMEPAD'],
   ['MOVE', 'STICK / D-PAD'],
   ['FIRE', 'A / RB / RT'],
   ['BOMB', 'B / LB / LT'],
   ['PAUSE', 'START'],
 ];
+
+const UI = 200; // UI depth, above the backdrop
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -42,17 +47,42 @@ export class TitleScene extends Phaser.Scene {
     this.padCursor = 0;
     this.panel = null;
     this.starting = false;
+    const preset = settings.preset;
 
-    this.nebula = this.add.tileSprite(0, 0, W, H, 'nebula').setOrigin(0);
-    this.starsFar = this.add.tileSprite(0, 0, W, H, 'stars_far').setOrigin(0);
-    this.starsNear = this.add.tileSprite(0, 0, W, H, 'stars_near').setOrigin(0);
+    // backdrop: nebula, stars, planet and a looping station flyby
+    this.nebula = this.add.tileSprite(0, 0, W, H, 'nebula_title').setOrigin(0).setDepth(DEPTH.nebula);
+    this.starsFar = this.add.tileSprite(0, 0, W, H, 'stars_far').setOrigin(0).setDepth(DEPTH.farStars);
+    this.add.image(W * 0.16, H * 0.3, 'planet_title').setDepth(DEPTH.planet);
+    this.starsNear = this.add.tileSprite(0, 0, W, H, 'stars_near').setOrigin(0).setDepth(DEPTH.nearStars);
+    this.flyLevel = generateSector('TITLE', 0);
+    this.station = new StationView(this, this.flyLevel, preset);
+    this.flyScroll = 900;
+    this.ambient = new AmbientView(this, this.flyLevel, this.station, preset);
+    this.megaView = new MegaView(this, [{ kind: 'battleship', x: W * 0.62, d: 620, scale: 1.05, flip: false, seed: 4711 }, { kind: 'ring', x: W * 0.12, d: 1900, scale: 0.9, flip: false, seed: 815 }], { tint: this.flyLevel.tint, preset, prefix: 'mega_title' });
+    this.add.rectangle(0, 0, W, H, 0x02030a, 0.3).setOrigin(0).setDepth(DEPTH.overlay - 1);
 
-    this.logo = gradientTitle(this, W / 2, 64, 'HYBRISCLONE', 3);
-    this.sub = text(this, W / 2, 92, 'SEEDED VERTICAL SHOOT-EM-UP', { tint: COLORS.cyan });
-    this.ship = this.add.image(W / 2, 134, 'player').setScale(2);
-    this.flame = this.add.image(W / 2, 150, 'flame').setScale(2).setOrigin(0.5, 0);
+    this.ship = this.add.image(W * 0.8, H * 0.62, 'player').setScale(1.6).setDepth(DEPTH.player);
+    this.shipGlow = this.add.image(this.ship.x, this.ship.y, 'player_glow').setScale(1.6).setDepth(DEPTH.player + 1).setBlendMode(Phaser.BlendModes.ADD);
+    this.add
+      .particles(0, 0, 'spark', {
+        speed: { min: 140, max: 260 },
+        angle: { min: 82, max: 98 },
+        lifespan: { min: 200, max: 420 },
+        scale: { start: 2.6, end: 0 },
+        alpha: { start: 0.85, end: 0 },
+        color: [0xffffff, 0x80e0ff, 0x2080ff],
+        blendMode: Phaser.BlendModes.ADD,
+        frequency: 12,
+        quantity: 2,
+        follow: this.ship,
+        followOffset: { x: 0, y: 90 },
+      })
+      .setDepth(DEPTH.player - 1);
 
-    const vol = (v) => '|'.repeat(Math.round(v * 10)) + '.'.repeat(10 - Math.round(v * 10));
+    this.logo = logo(this, W / 2, 170, 'HYBRISCLONE', 140, UI);
+    text(this, W / 2, 275, "A SEEDED VERTICAL SHOOT-'EM-UP", { size: 26, color: COLORS.cyan, depth: UI, spacing: 6 });
+
+    const vol = (v) => '|'.repeat(Math.round(v * 10)).padEnd(10, '.');
     const adjust = (which, d) => {
       const v = audio.volumes;
       v[which] = Math.round(Math.max(0, Math.min(1, v[which] + d)) * 10) / 10;
@@ -64,10 +94,10 @@ export class TitleScene extends Phaser.Scene {
           const blink = Math.floor(this.time.now / 200) % 2 === 0;
           const chars = this.seed.split('');
           if (blink) chars[this.padCursor] = '_';
-          return 'SEED ' + chars.join('');
+          return 'SEED  ' + chars.join('');
         }
         const cursor = this.menu && this.menu.current === this.seedItem && Math.floor(this.time.now / 300) % 2 ? '_' : ' ';
-        return 'SEED ' + this.seed + cursor;
+        return 'SEED  ' + this.seed + cursor;
       },
       onSelect: () => {
         if (this.controls.device === 'gamepad') this.startPadEdit();
@@ -75,45 +105,80 @@ export class TitleScene extends Phaser.Scene {
       },
       onClick: () => {},
     };
-    this.menu = new Menu(this, W / 2, 196, [
-      { label: () => 'START GAME', onSelect: () => this.startGame() },
-      this.seedItem,
-      {
-        label: () => 'RANDOM SEED',
-        onSelect: () => {
-          this.seed = randomSeedString();
-          this.seedTyped = true;
+    const restartNote = () => this.flash('APPLIES ON NEXT START');
+    this.menu = new Menu(
+      this,
+      W / 2,
+      370,
+      [
+        { label: () => 'START GAME', onSelect: () => this.startGame() },
+        this.seedItem,
+        {
+          label: () => 'RANDOM SEED',
+          onSelect: () => {
+            this.seed = randomSeedString();
+            this.seedTyped = true;
+          },
         },
-      },
-      {
-        label: () => 'MUSIC ' + vol(audio.volumes.music),
-        onLeft: () => adjust('music', -0.1),
-        onRight: () => adjust('music', 0.1),
-        onSelect: () => adjust('music', audio.volumes.music >= 1 ? -1 : 0.1),
-        onClick: (p, t) => adjust('music', p.worldX < t.x ? -0.1 : 0.1),
-      },
-      {
-        label: () => 'SFX   ' + vol(audio.volumes.sfx),
-        onLeft: () => adjust('sfx', -0.1),
-        onRight: () => adjust('sfx', 0.1),
-        onSelect: () => adjust('sfx', audio.volumes.sfx >= 1 ? -1 : 0.1),
-        onClick: (p, t) => {
-          adjust('sfx', p.worldX < t.x ? -0.1 : 0.1);
-          audio.sfx('pickup');
+        {
+          label: () => 'MUSIC   ' + vol(audio.volumes.music),
+          onLeft: () => adjust('music', -0.1),
+          onRight: () => adjust('music', 0.1),
+          onSelect: () => adjust('music', audio.volumes.music >= 1 ? -1 : 0.1),
+          onClick: (p, t) => adjust('music', p.worldX < t.x ? -0.1 : 0.1),
         },
-      },
-      { label: () => 'HIGH SCORES', onSelect: () => this.showPanel('scores') },
-      { label: () => 'CONTROLS', onSelect: () => this.showPanel('controls') },
-    ]);
+        {
+          label: () => 'SFX     ' + vol(audio.volumes.sfx),
+          onLeft: () => adjust('sfx', -0.1),
+          onRight: () => adjust('sfx', 0.1),
+          onSelect: () => adjust('sfx', audio.volumes.sfx >= 1 ? -1 : 0.1),
+          onClick: (p, t) => {
+            adjust('sfx', p.worldX < t.x ? -0.1 : 0.1);
+            audio.sfx('pickup');
+          },
+        },
+        {
+          label: () => 'QUALITY  ' + settings.quality.toUpperCase(),
+          onLeft: () => (settings.cycleQuality(-1), restartNote()),
+          onRight: () => (settings.cycleQuality(1), restartNote()),
+          onSelect: () => (settings.cycleQuality(1), restartNote()),
+        },
+        {
+          label: () => 'CRT FILTER  ' + (settings.crt ? 'ON' : 'OFF'),
+          onLeft: () => (settings.crt = !settings.crt),
+          onRight: () => (settings.crt = !settings.crt),
+          onSelect: () => (settings.crt = !settings.crt),
+        },
+        { label: () => 'HIGH SCORES', onSelect: () => this.showPanel('scores') },
+        { label: () => 'CONTROLS', onSelect: () => this.showPanel('controls') },
+      ],
+      { depth: UI }
+    );
 
-    this.hint = text(this, W / 2, 316, '', { tint: COLORS.dim });
-    this.footer = text(this, W / 2, H - 22, 'SAME SEED = SAME LEVELS', { tint: COLORS.dim });
-    text(this, W / 2, H - 10, 'CLICK OR PRESS A KEY FOR SOUND', { tint: COLORS.dim }).setName('soundHint');
+    // dark glass panel behind the menu and a footer band keep the text readable over the flyby
+    const panel = this.add.graphics().setDepth(UI - 2);
+    panel.fillStyle(0x03050c, 0.62);
+    panel.fillRoundedRect(W / 2 - 440, 330, 880, 560, 18);
+    panel.lineStyle(2, 0x5ae4ff, 0.25);
+    panel.strokeRoundedRect(W / 2 - 440, 330, 880, 560, 18);
+    panel.fillStyle(0x03050c, 0.7);
+    panel.fillRect(0, H - 96, W, 96);
+    this.hint = text(this, W / 2, 925, '', { size: 22, font: 'body', color: COLORS.grey, depth: UI, glow: false });
+    text(this, W / 2, H - 70, 'SAME SEED  =  SAME STATION, SAME WAVES, SAME MUSIC', { size: 20, font: 'body', color: COLORS.dim, depth: UI, glow: false });
+    this.soundHint = text(this, W / 2, H - 38, 'CLICK OR PRESS A KEY TO ENABLE SOUND', { size: 20, font: 'body', color: COLORS.orange, depth: UI, glow: false });
+    this.composing = text(this, W - 40, 40, 'COMPOSING MUSIC...', { size: 20, color: COLORS.cyan, origin: [1, 0.5], depth: UI });
+    this.note = text(this, W / 2, 970, '', { size: 22, color: COLORS.orange, depth: UI });
 
     onTypedKey(this, (ev) => this.handleKey(ev));
-
+    applyPost(this, this.cameras.main, preset);
     audio.playTitle();
-    this.cameras.main.fadeIn(300);
+    this.cameras.main.fadeIn(400);
+  }
+
+  flash(str) {
+    this.note.setText(str).setAlpha(1);
+    this.tweens.killTweensOf(this.note);
+    this.tweens.add({ targets: this.note, alpha: 0, delay: 1400, duration: 400 });
   }
 
   handleKey(ev) {
@@ -172,28 +237,29 @@ export class TitleScene extends Phaser.Scene {
     this.menu.enabled = false;
     this.menu.setVisible(false);
     const items = [];
-    const bg = this.add.rectangle(W / 2, 270, W - 24, 300, 0x000010, 0.85).setStrokeStyle(1, 0x404870);
+    const bg = this.add.rectangle(W / 2, 600, 1100, 720, 0x04060e, 0.9).setStrokeStyle(2, 0x5ae4ff, 0.6).setDepth(UI);
     items.push(bg);
     if (kind === 'scores') {
-      items.push(text(this, W / 2, 132, 'HIGH SCORES', { tint: COLORS.yellow, scale: 2 }));
+      items.push(text(this, W / 2, 300, 'HIGH SCORES', { size: 52, color: COLORS.yellow, depth: UI + 1 }));
       storage.getHighScores().forEach((e, i) => {
-        const y = 160 + i * 18;
-        items.push(text(this, 24, y, `${String(i + 1).padStart(2, ' ')}. ${e.name.padEnd(8, ' ')}`, { origin: [0, 0.5], tint: i === 0 ? COLORS.yellow : COLORS.white }));
-        items.push(text(this, 140, y, pad(e.score), { origin: [0, 0.5], tint: COLORS.cyan }));
-        items.push(text(this, W - 24, y, `${e.seed} S${e.sector}`, { origin: [1, 0.5], tint: COLORS.dim }));
+        const y = 380 + i * 50;
+        const color = i === 0 ? COLORS.yellow : COLORS.white;
+        items.push(text(this, 600, y, `${String(i + 1).padStart(2, ' ')}.  ${e.name}`, { size: 30, origin: [0, 0.5], color, depth: UI + 1, glow: i === 0 }));
+        items.push(text(this, 1040, y, pad(e.score), { size: 30, origin: [0.5, 0.5], color: COLORS.cyan, depth: UI + 1, glow: false }));
+        items.push(text(this, 1320, y, `${e.seed}  S${e.sector}`, { size: 22, font: 'body', origin: [1, 0.5], color: COLORS.dim, depth: UI + 1, glow: false }));
       });
     } else {
-      items.push(text(this, W / 2, 132, 'CONTROLS', { tint: COLORS.yellow, scale: 2 }));
+      items.push(text(this, W / 2, 300, 'CONTROLS', { size: 52, color: COLORS.yellow, depth: UI + 1 }));
       CONTROLS_HELP.forEach(([a, b], i) => {
-        const y = 156 + i * 14;
-        if (!a) items.push(text(this, W / 2, y, b, { tint: COLORS.orange }));
+        const y = 370 + i * 36;
+        if (!a) items.push(text(this, W / 2, y, b, { size: 26, color: COLORS.orange, depth: UI + 1 }));
         else {
-          items.push(text(this, 40, y, a, { origin: [0, 0.5], tint: COLORS.grey }));
-          items.push(text(this, 100, y, b, { origin: [0, 0.5] }));
+          items.push(text(this, 720, y, a, { size: 22, origin: [0, 0.5], color: COLORS.grey, depth: UI + 1, glow: false }));
+          items.push(text(this, 880, y, b, { size: 24, font: 'body', origin: [0, 0.5], depth: UI + 1, glow: false }));
         }
       });
     }
-    items.push(text(this, W / 2, 410, 'PRESS FIRE OR CLICK TO RETURN', { tint: COLORS.dim }));
+    items.push(text(this, W / 2, 930, 'PRESS FIRE OR CLICK TO RETURN', { size: 22, font: 'body', color: COLORS.dim, depth: UI + 1, glow: false }));
     this.panel = items;
     this.panelOpenedAt = this.time.now;
     this.input.once('pointerdown', () => this.closePanel());
@@ -216,23 +282,34 @@ export class TitleScene extends Phaser.Scene {
     this.seed = normalizeSeed(this.seed) || DEFAULT_SEED;
     storage.setLastSeed(this.seed);
     audio.unlock();
-    audio.stopMusic(0.2);
+    audio.stopMusic(0.3);
     audio.sfx('menuSelect');
-    this.cameras.main.fadeOut(400);
+    this.cameras.main.fadeOut(450);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Game', { seed: this.seed }));
   }
 
   update(time, delta) {
     const dt = delta / 1000;
-    this.nebula.tilePositionY -= 6 * dt;
-    this.starsFar.tilePositionY -= 18 * dt;
-    this.starsNear.tilePositionY -= 45 * dt;
-    this.ship.y = 134 + Math.sin(time * 0.002) * 4;
-    this.flame.y = this.ship.y + 16;
-    this.flame.setScale(2 * (0.8 + Math.random() * 0.4), 2 * (0.7 + Math.random() * 0.7));
+    this.nebula.tilePositionY -= 8 * dt;
+    this.starsFar.tilePositionY -= 20 * dt;
+    this.starsNear.tilePositionY -= 50 * dt;
+    this.flyScroll += 70 * dt;
+    if (this.flyScroll > this.station.mapHeight - H - 200) {
+      this.flyScroll = 900;
+      this.ambient.tIdx = 0;
+    }
+    this.station.update(this.flyScroll, time, dt);
+    this.megaView.update(this.flyScroll, time, dt);
+    this.ambient.update(this.flyScroll, time, dt);
+    this.ship.x = W * 0.8 + Math.sin(time * 0.0007) * 60;
+    this.ship.y = H * 0.62 + Math.sin(time * 0.0013) * 24;
+    this.ship.rotation = Math.cos(time * 0.0007) * 0.08;
+    this.shipGlow.setPosition(this.ship.x, this.ship.y).setRotation(this.ship.rotation);
+    this.logo.update(time);
 
-    const soundHint = this.children.getByName('soundHint');
-    if (soundHint) soundHint.setVisible(!audio.unlocked);
+    this.soundHint.setVisible(!audio.unlocked);
+    this.composing.setVisible(audio.isComposing());
+    this.composing.setAlpha(0.5 + 0.5 * Math.sin(time * 0.006));
 
     this.controls.typing = !this.panel && this.menu.current === this.seedItem;
     this.controls.update(delta);
@@ -245,13 +322,14 @@ export class TitleScene extends Phaser.Scene {
     if (this.padEdit) {
       this.updatePadEdit();
       this.menu.refresh();
-      this.hint.setText('UP/DOWN CHAR  LEFT/RIGHT MOVE  A DONE');
+      this.hint.setText('UP/DOWN  CHANGE CHARACTER     LEFT/RIGHT  MOVE     A  DONE');
       return;
     }
     this.menu.update(this.controls);
-    if (this.menu.current === this.seedItem) {
-      this.hint.setText(this.controls.device === 'gamepad' ? 'PRESS A TO EDIT SEED' : 'TYPE A SEED, ENTER TO START');
-    } else if (this.menu.current.onLeft) {
+    const cur = this.menu.current;
+    if (cur === this.seedItem) {
+      this.hint.setText(this.controls.device === 'gamepad' ? 'PRESS A TO EDIT THE SEED' : 'TYPE A SEED  -  ENTER TO START');
+    } else if (cur.onLeft) {
       this.hint.setText('LEFT / RIGHT TO ADJUST');
     } else {
       this.hint.setText('');

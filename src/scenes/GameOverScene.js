@@ -23,12 +23,12 @@ export class GameOverScene extends Phaser.Scene {
     const { score, seed, sector } = this.result;
     this.controls = new InputManager(this);
     this.controls.latch();
-    this.add.tileSprite(0, 0, W, H, 'nebula').setOrigin(0);
+    this.add.tileSprite(0, 0, W, H, 'nebula_title').setOrigin(0).setAlpha(0.7);
     this.stars = this.add.tileSprite(0, 0, W, H, 'stars_far').setOrigin(0);
 
-    text(this, W / 2, 60, 'GAME OVER', { scale: 3, tint: COLORS.red });
-    text(this, W / 2, 96, 'SCORE ' + pad(score), { scale: 2, tint: COLORS.white });
-    text(this, W / 2, 116, `REACHED SECTOR ${sector + 1}   SEED ${seed}`, { tint: COLORS.grey });
+    text(this, W / 2, 120, 'GAME OVER', { size: 120, color: COLORS.red, spacing: 10 });
+    text(this, W / 2, 230, 'SCORE  ' + pad(score), { size: 48 });
+    text(this, W / 2, 285, `REACHED SECTOR ${sector + 1}     SEED ${seed}`, { size: 24, font: 'body', color: COLORS.grey, glow: false });
 
     this.items = [];
     audio.playJingle('gameOver');
@@ -51,14 +51,13 @@ export class GameOverScene extends Phaser.Scene {
     this.controls.typing = true;
     this.name = (storage.getLastName() || 'PLAYER').slice(0, NAME_MAX).split('');
     this.cursor = this.name.length - 1;
-    this.items.push(text(this, W / 2, 170, 'NEW HIGH SCORE!', { scale: 2, tint: COLORS.yellow }));
-    this.items.push(text(this, W / 2, 196, 'ENTER YOUR NAME', { tint: COLORS.cyan }));
-    this.nameT = text(this, W / 2, 226, '', { scale: 2 });
+    this.items.push(text(this, W / 2, 420, 'NEW HIGH SCORE!', { size: 64, color: COLORS.yellow }));
+    this.items.push(text(this, W / 2, 495, 'ENTER YOUR NAME', { size: 28, color: COLORS.cyan }));
+    this.nameT = text(this, W / 2, 590, '', { size: 80, spacing: 14 });
     this.items.push(this.nameT);
-    this.items.push(text(this, W / 2, 262, 'KEYS: TYPE + ENTER', { tint: COLORS.dim }));
-    this.items.push(text(this, W / 2, 276, 'PAD: UP/DOWN LETTER  LEFT/RIGHT MOVE', { tint: COLORS.dim }));
-    this.items.push(text(this, W / 2, 290, 'START TO CONFIRM', { tint: COLORS.dim }));
-    const ok = text(this, W / 2, 316, '[ OK ]', { scale: 2, tint: COLORS.green });
+    this.items.push(text(this, W / 2, 690, 'KEYBOARD: TYPE + ENTER', { size: 22, font: 'body', color: COLORS.dim, glow: false }));
+    this.items.push(text(this, W / 2, 725, 'GAMEPAD: UP/DOWN LETTER   LEFT/RIGHT MOVE   START CONFIRM', { size: 22, font: 'body', color: COLORS.dim, glow: false }));
+    const ok = text(this, W / 2, 810, '[  OK  ]', { size: 48, color: COLORS.green });
     ok.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.confirmName());
     this.items.push(ok);
   }
@@ -85,7 +84,7 @@ export class GameOverScene extends Phaser.Scene {
 
   updateNameEntry() {
     const c = this.controls;
-    const pad = this.controls.getPad();
+    const gp = this.controls.getPad();
     if (!this.name.length) this.name = ['A'];
     const cycle = (d) => {
       const i = Math.max(0, NAME_CHARS.indexOf(this.name[this.cursor]));
@@ -102,7 +101,7 @@ export class GameOverScene extends Phaser.Scene {
     } else if (c.repeat('left')) {
       this.cursor = Math.max(0, this.cursor - 1);
       audio.sfx('menuMove');
-    } else if (pad && pad.buttons[9] && pad.buttons[9].pressed && c.pressed('pause')) {
+    } else if (gp && gp.buttons[9] && gp.buttons[9].pressed && c.pressed('pause')) {
       this.confirmName();
       return;
     }
@@ -115,8 +114,7 @@ export class GameOverScene extends Phaser.Scene {
     if (this.state !== 'name') return;
     const name = this.name.join('').trim() || 'PLAYER';
     const { score, seed, sector } = this.result;
-    const entry = { name, score, seed, sector: sector + 1 };
-    const rank = storage.addHighScore(entry);
+    const rank = storage.addHighScore({ name, score, seed, sector: sector + 1 });
     storage.setLastName(name);
     audio.sfx('menuSelect');
     this.controls.typing = false;
@@ -128,19 +126,18 @@ export class GameOverScene extends Phaser.Scene {
   startContinue(rank) {
     this.clearItems();
     this.state = 'continue';
-    const list = storage.getHighScores();
-    list.forEach((e, i) => {
-      const y = 150 + i * 14;
-      const tint = i === rank ? COLORS.yellow : COLORS.grey;
-      this.items.push(text(this, 30, y, `${String(i + 1).padStart(2, ' ')}. ${e.name.padEnd(8, ' ')}`, { origin: [0, 0.5], tint }));
-      this.items.push(text(this, 150, y, pad(e.score), { origin: [0, 0.5], tint: i === rank ? COLORS.yellow : COLORS.cyan }));
-      this.items.push(text(this, W - 30, y, `S${e.sector}`, { origin: [1, 0.5], tint: COLORS.dim }));
+    storage.getHighScores().forEach((e, i) => {
+      const y = 360 + i * 44;
+      const hi = i === rank;
+      this.items.push(text(this, 640, y, `${String(i + 1).padStart(2, ' ')}.  ${e.name}`, { size: 28, origin: [0, 0.5], color: hi ? COLORS.yellow : COLORS.grey, glow: hi }));
+      this.items.push(text(this, 1060, y, pad(e.score), { size: 28, color: hi ? COLORS.yellow : COLORS.cyan, glow: hi }));
+      this.items.push(text(this, 1280, y, `S${e.sector}`, { size: 22, font: 'body', origin: [1, 0.5], color: COLORS.dim, glow: false }));
     });
     this.countdown = CONTINUE_SECONDS + 0.999;
-    this.contT = text(this, W / 2, 330, '', { scale: 2, tint: COLORS.orange });
+    this.contT = text(this, W / 2, 850, '', { size: 56, color: COLORS.orange });
     this.items.push(this.contT);
-    this.items.push(text(this, W / 2, 356, `FIRE / CLICK: CONTINUE AT SECTOR ${this.result.sector + 1}`, { tint: COLORS.white }));
-    this.items.push(text(this, W / 2, 370, '(SCORE RESETS)   ESC / B: TITLE', { tint: COLORS.dim }));
+    this.items.push(text(this, W / 2, 920, `FIRE / CLICK: CONTINUE AT SECTOR ${this.result.sector + 1}`, { size: 26 }));
+    this.items.push(text(this, W / 2, 960, '(SCORE RESETS)     ESC / B: TITLE', { size: 22, font: 'body', color: COLORS.dim, glow: false }));
     this.time.delayedCall(250, () => {
       this.input.once('pointerdown', () => this.continueGame());
     });
@@ -152,9 +149,7 @@ export class GameOverScene extends Phaser.Scene {
     audio.stopMusic(0.1);
     const { seed, sector, continues } = this.result;
     this.cameras.main.fadeOut(300);
-    this.cameras.main.once('camerafadeoutcomplete', () =>
-      this.scene.start('Game', { seed, sector, continues: (continues || 0) + 1 })
-    );
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Game', { seed, sector, continues: (continues || 0) + 1 }));
   }
 
   toTitle() {
@@ -166,12 +161,12 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    this.stars.tilePositionY -= 10 * (delta / 1000);
+    this.stars.tilePositionY -= 20 * (delta / 1000);
     this.controls.update(delta);
     if (this.state === 'name') this.updateNameEntry();
     else if (this.state === 'continue') {
       this.countdown -= delta / 1000;
-      this.contT.setText('CONTINUE? ' + Math.max(0, Math.floor(this.countdown)));
+      this.contT.setText('CONTINUE?  ' + Math.max(0, Math.floor(this.countdown)));
       if (this.controls.pressed('fire') || this.controls.pressed('confirm')) this.continueGame();
       else if (this.controls.pressed('back') || this.countdown <= 0) this.toTitle();
     }
