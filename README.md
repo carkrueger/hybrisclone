@@ -26,7 +26,7 @@ A single-player, wide-screen vertical shoot-'em-up in the spirit of *Hybris* (Am
 
 ```bash
 npm install
-npm run dev       # development server with hot reload
+npm run dev       # development server with hot reload (in game, keys 1-9 drop P V L H O W T D B pods)
 npm test          # determinism tests (RNG, level generator, autotiling, composer)
 npm run build     # static build in dist/
 npm run preview   # serve dist/ on http://localhost:4173
@@ -59,8 +59,18 @@ Browsers only allow audio after a user gesture, so click or press a key once on 
 
 ## Gameplay
 
-- Power pods (**P**) move the ship up a Hybris-style upgrade ladder: main gun spread, side guns, rear guns, then homing missiles. Losing a ship costs one level.
+- Power pods (**P**) move the ship up a Hybris-style upgrade ladder: main gun level, side guns, then rear guns. Losing a ship costs one level.
+- **Main gun type:** the ladder level powers whichever main gun is fitted. Picking up the type you already carry counts as a power pod.
+  - **V**: Vulcan, the classic widening spread.
+  - **L**: Laser, a continuous beam that pierces everything in its path. Its damage ramps up while it stays on a target.
+  - **H**: Homing, a light center gun plus a growing fan of homing missiles.
+- **Specials** stay until you lose a ship. You can carry all of them at once, and a duplicate pickup gives 2,500 points.
+  - **O**: Orbiting ball. It can't be destroyed, circles the ship, damages enemies it touches and absorbs enemy bullets.
+  - **W**: Wingman. A small escort that trails the ship and fires along with it.
+  - **T**: Point defense. A turret that automatically shoots down nearby enemy bullets and missiles.
+  - **D**: Deflector shield. It absorbs one hit, then bursts outwards, clearing nearby fire and damaging enemies.
 - **B** pods add a smart bomb and **S** pods give bonus points.
+- The HUD shows the current gun and ladder below the power meter, and the specials you hold to its right.
 - Destroying a whole formation gives a bonus. You get an extra ship every 50,000 points.
 - After game over you can enter a high score and continue from the same level, but your score resets.
 

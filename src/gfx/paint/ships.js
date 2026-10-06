@@ -4,6 +4,7 @@ import {
   newCanvas, addCanvasTexture, rgba, shade, mirroredPath, polyPath, bounds,
   paintMaterial, glass, glowDot, panelLine, rivet, ValueNoise,
 } from './canvas.js';
+import { PODS } from '../../entities/pickups.js';
 
 /** subtle seeded grime over all painted (opaque) pixels */
 export function grimePass(ctx, w, h, seed, amount = 0.2) {
@@ -693,6 +694,27 @@ function paintPod(scene, key, letter, color) {
   addCanvasTexture(scene, key, c);
 }
 
+/** point-defense turret: small dome with a twin barrel, pointing up */
+function paintTurret(scene) {
+  const w = 28;
+  const h = 40;
+  const { c, ctx } = newCanvas(w, h);
+  const cx = w / 2;
+  const cy = h - 14;
+  for (const bx of [-3, 3]) {
+    paintMaterial(ctx, () => {
+      ctx.beginPath();
+      ctx.rect(cx + bx - 1.5, 3, 3, cy - 3);
+    }, { x0: cx + bx - 1.5, y0: 3, x1: cx + bx + 1.5, y1: cy }, MAT.steel, { rim: 0.5, outline: 1 });
+  }
+  paintMaterial(ctx, () => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+  }, { x0: cx - 10, y0: cy - 10, x1: cx + 10, y1: cy + 10 }, { base: PODS.T.color, sheen: true }, { rim: 1.5, outline: 1.5 });
+  glass(ctx, cx, cy, 3.5, 3.5, 0xffe080);
+  addCanvasTexture(scene, 'sp_turret', c);
+}
+
 function paintMine(scene) {
   const size = 72;
   const { c, ctx } = newCanvas(size, size);
@@ -733,9 +755,8 @@ export function paintShips(scene) {
   paintSpinner(scene);
   paintMine(scene);
   paintBossCore(scene);
-  paintPod(scene, 'pod_P', 'P', 0x2f7cf0);
-  paintPod(scene, 'pod_B', 'B', 0xe03838);
-  paintPod(scene, 'pod_S', 'S', 0xe0a828);
+  for (const [k, pod] of Object.entries(PODS)) paintPod(scene, 'pod_' + k, k, pod.color);
+  paintTurret(scene);
 }
 
 export { MAT, shade };

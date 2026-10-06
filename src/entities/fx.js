@@ -136,6 +136,12 @@ export class FX {
     }
   }
 
+  /** expanding shockwave ring (bomb, shield burst) */
+  shockRing(x, y, scale, tint = 0xb0e0ff, duration = 700) {
+    const ring = this.sprite('ring', x, y).setScale(0.3).setTint(tint);
+    this.scene.tweens.add({ targets: ring, scale, alpha: 0, duration, ease: 'Cubic.easeOut', onComplete: () => this.release(ring) });
+  }
+
   floatText(x, y, str, color = 0xffffff) {
     const t = text(this.scene, x, y, str, { size: 26, color, depth: DEPTH.overlay });
     this.scene.tweens.add({ targets: t, y: y - 60, alpha: 0, duration: 1000, ease: 'Quad.easeOut', onComplete: () => t.destroy() });

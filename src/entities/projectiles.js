@@ -9,7 +9,7 @@ import { SpritePool } from './pool.js';
 const ADD = Phaser.BlendModes.ADD;
 const ELONGATED = new Set(['eb_shard', 'eb_needle']);
 
-function segDist2(px, py, x0, y0, x1, y1) {
+export function segDist2(px, py, x0, y0, x1, y1) {
   const dx = x1 - x0;
   const dy = y1 - y0;
   const l2 = dx * dx + dy * dy || 1;
@@ -353,6 +353,59 @@ export class EnemyFire {
     });
     this.missiles = this.missiles.filter((mi) => !mi.dead);
     return n;
+  }
+
+  /** orb / shield burst: remove bullets and missiles inside a circle */
+  clearCircle(x, y, r, spark = true, tint = 0xb0e0ff) {
+    let bullets = 0;
+    let missiles = 0;
+    this.bullets.forEach((b) => {
+      if ((b.x - x) ** 2 + (b.y - y) ** 2 < (r + b.r) ** 2) {
+        if (spark) this.scene.fx.hitSpark(b.x, b.y, tint);
+        this.bullets.release(b);
+        bullets++;
+      }
+    });
+    for (const mi of this.missiles) {
+      if (!mi.dead && (mi.x - x) ** 2 + (mi.y - y) ** 2 < (r + mi.r) ** 2) {
+        this.killMissile(mi, true);
+        missiles++;
+      }
+    }
+    if (missiles) this.missiles = this.missiles.filter((mi) => !mi.dead);
+    return { bullets, missiles };
+  }
+
+  /** point defense: nearest missile within maxR, else nearest bullet; {kind, obj, x, y} or null */
+  nearestShot(x, y, maxR) {
+    const r2 = maxR * maxR;
+    let best = null;
+    let bestD = r2;
+    for (const mi of this.missiles) {
+      if (mi.dead) continue;
+      const d = (mi.x - x) ** 2 + (mi.y - y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = { kind: 'missile', obj: mi, x: mi.x, y: mi.y };
+      }
+    }
+    if (best) return best;
+    this.bullets.forEach((b) => {
+      const d = (b.x - x) ** 2 + (b.y - y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = { kind: 'bullet', obj: b, x: b.x, y: b.y };
+      }
+    });
+    return best;
+  }
+
+  /** destroy a shot returned by nearestShot */
+  destroyShot(shot) {
+    if (shot.kind === 'missile') {
+      this.killMissile(shot.obj, true);
+      this.missiles = this.missiles.filter((mi) => !mi.dead);
+    } else this.bullets.release(shot.obj);
   }
 
   killMissile(mi, boom) {

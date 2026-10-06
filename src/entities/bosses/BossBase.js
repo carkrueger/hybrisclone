@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { W, H, U, DEPTH } from '../../config.js';
 import { RNG } from '../../core/rng.js';
 import { SHADOW_OFFSET } from '../Player.js';
+import { segDist2 } from '../projectiles.js';
 
 const ADD = Phaser.BlendModes.ADD;
 
@@ -220,6 +221,16 @@ export class BossBase {
       if ((bx - pos.x) ** 2 + (by - pos.y) ** 2 < (p.r + br) ** 2) return p;
     }
     return null;
+  }
+
+  /** every part touched by a beam segment of half-width hw (player laser) */
+  hitSegment(x0, y0, x1, y1, hw) {
+    if (this.state !== 'fight') return [];
+    return this.parts.filter((p) => {
+      if (!p.alive || (p.sprite && p.sprite.alpha < 0.5)) return false;
+      const pos = this.partPos(p);
+      return segDist2(pos.x, pos.y, x0, y0, x1, y1) < (p.r + hw) ** 2;
+    });
   }
 
   targets() {

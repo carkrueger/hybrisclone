@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { W, H } from '../config.js';
 import { text, setColor, pad, COLORS } from '../ui/text.js';
 import { LADDER, MAX_POWER } from '../entities/weapons.js';
+import { WEAPON_TYPES, SPECIALS } from '../entities/pickups.js';
 import { addScanlines } from '../gfx/post.js';
 
 const SEG_W = 34;
@@ -50,6 +51,11 @@ export class HudScene extends Phaser.Scene {
       this.segs.push(r);
     }
     this.weaponT = text(this, W / 2, H - 22, '', { size: 16, font: 'body', color: COLORS.grey, glow: false });
+    // held specials, right of the power meter
+    const icons = [...Object.entries(SPECIALS).map(([id, sp]) => [id, sp.pod]), ['shield', 'D']];
+    this.specialIcons = icons.map(([id, pod], i) =>
+      ({ id, img: this.add.image(this.meterX + meterW + 30 + i * 38, H - 52, 'pod_' + pod).setScale(0.6).setVisible(false) })
+    );
     this.deviceT = text(this, W - 40, H - 46, '', { size: 18, font: 'body', color: COLORS.dim, origin: [1, 0.5], glow: false });
 
     this.bossName = text(this, W / 2, 112, '', { size: 24, color: COLORS.red }).setVisible(false);
@@ -80,16 +86,21 @@ export class HudScene extends Phaser.Scene {
       const bx = lives > 5 ? this.livesMore.x + this.livesMore.width + 10 : 54 + Math.min(lives, 5) * 46 + 24;
       this.bombIcons.forEach((ic, i) => ic.setVisible(i < s.bombs).setX(bx + i * 40));
     }
-    if (changed('power', s.power)) {
+    const powerChanged = changed('power', s.power);
+    if (changed('weapon', s.weapon) || powerChanged) {
       this.segs.forEach((r, i) => {
         r.setFillStyle(i <= s.power ? r.onColor : 0x1a2030, i <= s.power ? 1 : 0.7);
       });
       const w = LADDER[s.power];
-      const parts = [`MAIN ${w.main}`];
+      const type = WEAPON_TYPES[s.weapon] || WEAPON_TYPES.vulcan;
+      const parts = [`${type.name} ${w.main}`];
       if (w.side) parts.push(`SIDE ${w.side}`);
-      if (w.rear) parts.push('REAR');
-      if (w.homing) parts.push(`HOMING ${w.homing}`);
-      this.weaponT.setText(parts.join('   '));
+      if (w.rear) parts.push(`REAR ${w.rear}`);
+      setColor(this.weaponT.setText(parts.join('   ')), type.color, false);
+    }
+    if (changed('specials', s.specials)) {
+      const held = new Set(s.specials ? s.specials.split(',') : []);
+      for (const ic of this.specialIcons) ic.img.setVisible(held.has(ic.id));
     }
     if (changed('device', s.device)) this.deviceT.setText({ keyboard: 'KEYBOARD', mouse: 'MOUSE', gamepad: 'GAMEPAD' }[s.device] || '');
     // the top segment shimmers when maxed out

@@ -155,6 +155,15 @@ export function sfxBank(sr) {
     const hiss = nz() * 0.3;
     return (buzz + hiss) * Math.min(1, t * 30) * Math.exp(-t * 3);
   });
+  b.playerLaser = synth(sr, 0.18, (t, i, st) => {
+    st.ph = (st.ph || 0) + (620 + 90 * Math.sin(t * 70)) / sr;
+    const buzz = sq(st.ph) * 0.35 + Math.sin(TAU * st.ph * 2) * 0.35;
+    return (buzz + nz() * 0.12) * Math.min(1, t * 60) * Math.exp(-t * 9);
+  });
+  b.zap = synth(sr, 0.05, (t, i, st) => {
+    st.ph = (st.ph || 0) + (2600 * Math.exp(-t * 60) + 900) / sr;
+    return (sq(st.ph) * 0.5 + nz() * 0.25) * Math.exp(-t * 70);
+  });
   b.telegraph = synth(sr, 0.18, (t) => (sq(1400 * t) * 0.4 + sq(1405 * t) * 0.4) * Math.exp(-t * 18));
   b.warning = synth(sr, 1.6, (t) => {
     const f = Math.floor(t / 0.25) % 2 ? 660 : 880;

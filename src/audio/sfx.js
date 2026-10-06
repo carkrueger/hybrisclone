@@ -15,6 +15,8 @@ export const SFX_THROTTLE = {
   menuMove: 30,
   laser: 120,
   telegraph: 90,
+  playerLaser: 140,
+  zap: 60,
 };
 
 const LEVEL = {
@@ -36,6 +38,8 @@ const LEVEL = {
   menuSelect: 0.4,
   laser: 0.5,
   telegraph: 0.25,
+  playerLaser: 0.18,
+  zap: 0.2,
 };
 
 // pitch variation keeps rapid repeats from sounding mechanical

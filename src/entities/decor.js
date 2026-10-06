@@ -5,7 +5,7 @@ import { SHIP_ENGINES } from '../gfx/paint/ships.js';
 const ADD = Phaser.BlendModes.ADD;
 
 export class ShipDecor {
-  constructor(scene, sprite, key, { flames = true, rim = true, rimColor = 0x5ae4ff, depth } = {}) {
+  constructor(scene, sprite, key, { flames = true, rim = true, rimColor = 0x5ae4ff, depth, scale = 1 } = {}) {
     this.sprite = sprite;
     this.flames = [];
     const d = depth ?? sprite.depth;
@@ -13,7 +13,7 @@ export class ShipDecor {
     if (flames && eng) {
       for (const [ex, ey] of eng.at) {
         const f = scene.add.image(0, 0, eng.tex).setOrigin(0.5, 0).setBlendMode(ADD).setDepth(d - 0.5);
-        this.flames.push({ img: f, ex, ey, dir: eng.dir, s: eng.scale });
+        this.flames.push({ img: f, ex, ey, dir: eng.dir, s: eng.scale * scale });
       }
     }
     this.rim = null;

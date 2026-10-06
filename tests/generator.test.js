@@ -8,6 +8,7 @@ import { THEMES, themeFor, rosterFor } from '../src/level/themes.js';
 import { difficulty } from '../src/level/difficulty.js';
 import { ENEMY_DEFS } from '../src/level/enemyDefs.js';
 import { MID_ARCHETYPES, SECTOR_BOSSES } from '../src/level/bosses.js';
+import { PODS } from '../src/entities/pickups.js';
 
 describe('generateLevel', () => {
   it('is deterministic for the same seed, sector and level', () => {
@@ -119,6 +120,20 @@ describe('generateLevel', () => {
         expect(lv.boss.hull.profile.length).toBe(lv.boss.hull.h);
       }
     }
+  });
+
+  it('only drops known pods and mixes in weapon types and specials', () => {
+    const seen = new Set();
+    for (let s = 0; s < 6; s++) {
+      for (let l = 0; l < 4; l++) {
+        for (const w of generateLevel('PODS', s, l).waves) {
+          if (w.pod === null) continue;
+          expect(Object.keys(PODS)).toContain(w.pod);
+          seen.add(PODS[w.pod].kind);
+        }
+      }
+    }
+    for (const kind of ['power', 'bomb', 'weapon', 'special', 'shield']) expect(seen).toContain(kind);
   });
 });
 

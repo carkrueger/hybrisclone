@@ -307,6 +307,7 @@ export function paintFx(scene) {
   missile(scene);
   orb(scene, 'eb_orb', 8, 0xff40b0);
   orb(scene, 'eb_big', 11, 0xff8a20);
+  orb(scene, 'sp_orb', 14, 0xa080ff);
   softTex(scene, 'glow', 128, [[0, 0xffffff, 1], [0.25, 0xffffff, 0.55], [0.6, 0xffffff, 0.15], [1, 0xffffff, 0]]);
   softTex(scene, 'spark', 16, [[0, 0xffffff, 1], [0.4, 0xffffff, 0.8], [1, 0xffffff, 0]]);
   noisyPuff(scene, 'fire0', 96, 11, 0xfff4c0, 0xff4010);

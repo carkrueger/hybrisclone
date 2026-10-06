@@ -7,6 +7,8 @@ import { ENEMY_DEFS, NO_ELITE } from './enemyDefs.js';
 export { ENEMY_DEFS };
 
 const LANE = W / 3;
+// pod letters for carrier waves (every fifth carrier always drops a bomb)
+const POD_WEIGHTS = [[55, 'P'], [6, 'V'], [6, 'L'], [6, 'H'], [5, 'O'], [5, 'W'], [5, 'T'], [6, 'D'], [6, 'S']];
 const HEAVY = new Set(['bomber', 'gunship', 'lavabomber', 'tug', 'prism', 'gatepylon']);
 const r = (rng, a, b) => Math.round(rng.int(a, b) * U);
 
@@ -193,7 +195,7 @@ export function generateWaves(rng, { length, roster, diff, theme }, backdrop) {
     if (!NO_ELITE.has(w.type) && (i % 4 === 3 || rng.chance(0.05))) {
       w.carrier = w.count - 1;
       podCount++;
-      w.pod = podCount % 5 === 0 ? 'B' : rng.chance(0.12) ? 'S' : 'P';
+      w.pod = podCount % 5 === 0 ? 'B' : rng.weighted(POD_WEIGHTS);
     }
     if (!NO_ELITE.has(w.type) && rng.chance(diff.eliteChance)) w.elite = rng.int(0, w.count - 1);
   });

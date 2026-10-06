@@ -20,6 +20,9 @@ import { SpritePool } from '../entities/pool.js';
 import { FX } from '../entities/fx.js';
 import { Player } from '../entities/Player.js';
 import { WeaponSystem, MAX_POWER } from '../entities/weapons.js';
+import { PODS, WEAPON_TYPES, resolvePickup } from '../entities/pickups.js';
+import { Specials } from '../entities/specials.js';
+import { PlayerLaser } from '../entities/laser.js';
 import { Enemy } from '../entities/Enemy.js';
 import { EnemyFire } from '../entities/projectiles.js';
 import { createBoss } from '../entities/bosses/index.js';
@@ -50,6 +53,7 @@ export class GameScene extends Phaser.Scene {
     this.lives = START_LIVES;
     this.bombs = START_BOMBS;
     this.power = 0;
+    this.weaponType = 'vulcan';
     this.nextExtra = EXTRA_LIFE_EVERY;
     this.hiScore = storage.getHighScores()[0].score;
     this.controls = new InputManager(this);
@@ -70,7 +74,8 @@ export class GameScene extends Phaser.Scene {
     this.fx = new FX(this, this.preset);
     this.fxG = this.add.graphics().setDepth(DEPTH.enemies + 3).setBlendMode(ADD);
     this.player = new Player(this, this.preset);
-    this.weapons = new WeaponSystem(this);
+    this.weapons = new WeaponSystem(this, new PlayerLaser(this));
+    this.specials = new Specials(this);
     this.efire = new EnemyFire(this);
     this.boss = null;
     this.phase = 'play';
@@ -95,8 +100,19 @@ export class GameScene extends Phaser.Scene {
       this.game.events.off('blur', this.onBlur);
       this.scene.stop('Hud');
     });
+    if (import.meta.env.DEV) this.addDevKeys();
     this.cameras.main.fadeIn(500);
     this.updateHud();
+  }
+
+  /** dev builds only: digit keys drop pods right above the ship */
+  addDevKeys() {
+    const letters = 'PVLHOWTDB';
+    this.input.keyboard.on('keydown', (ev) => {
+      const k = Number(ev.key);
+      if (!(k >= 1 && k <= letters.length) || !this.player.alive) return;
+      this.spawnPod(this.player.x, this.player.y - 160, letters[k - 1]);
+    });
   }
 
   // ------------------------------------------------------------------ levels
@@ -194,12 +210,15 @@ export class GameScene extends Phaser.Scene {
 
     this.spawn(now);
     this.player.update(dt, this.controls, now);
-    if (this.player.alive && !this.player.entering && this.phase !== 'gameover') {
-      this.weapons.update(dt, this.controls.held('fire'), this.player, this.power);
+    const armed = this.player.alive && !this.player.entering && this.phase !== 'gameover';
+    const firing = armed && this.controls.held('fire');
+    if (armed) {
+      this.weapons.update(dt, firing, this.player, this.power, this.weaponType);
       if (this.controls.pressed('bomb')) this.useBomb(now);
-    }
+    } else this.weapons.idle();
 
     this.updatePlayerBullets(dt);
+    this.specials.update(dt, now, firing);
     this.fxG.clear();
     for (const e of this.enemies) e.update(dt, now);
     this.enemies = this.enemies.filter((e) => e.alive);
@@ -268,8 +287,9 @@ export class GameScene extends Phaser.Scene {
     return b;
   }
 
-  spawnMissile(x, y) {
-    const b = this.spawnPlayerBullet('pb_missile', x, y, 0, -150 * U, 2, 0);
+  spawnMissile(x, y, angle = -Math.PI / 2) {
+    const v = 150 * U;
+    const b = this.spawnPlayerBullet('pb_missile', x, y, Math.cos(angle) * v, Math.sin(angle) * v, 2, angle + Math.PI / 2);
     b.setBlendMode(Phaser.BlendModes.NORMAL);
     b.homing = true;
     b.life = 2600;
@@ -378,6 +398,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
     if (!hit && this.boss && this.boss.hullContains(px, py, -10)) hit = true;
+    if (hit && this.specials.absorbHit(now)) return;
     if (hit) this.killPlayer(now);
   }
 
@@ -451,28 +472,18 @@ export class GameScene extends Phaser.Scene {
   collectPod(p) {
     const { x, y } = p.sprite;
     this.playSfx('pickup', x);
-    const colors = { P: 0x5ab0ff, B: 0xff5050, S: 0xffd040 };
-    this.fx.sparkle(x, y, colors[p.type]);
-    if (p.type === 'P') {
-      if (this.power < MAX_POWER) {
-        this.power++;
-        this.fx.floatText(x, y, 'POWER UP', COLORS.cyan);
-      } else {
-        this.addScore(5000);
-        this.fx.floatText(x, y, '5000', COLORS.yellow);
-      }
-    } else if (p.type === 'B') {
-      if (this.bombs < MAX_BOMBS) {
-        this.bombs++;
-        this.fx.floatText(x, y, 'BOMB', COLORS.red);
-      } else {
-        this.addScore(3000);
-        this.fx.floatText(x, y, '3000', COLORS.yellow);
-      }
-    } else {
-      this.addScore(2000);
-      this.fx.floatText(x, y, '2000', COLORS.yellow);
-    }
+    const pod = PODS[p.type];
+    this.fx.sparkle(x, y, pod ? pod.color : 0xffd040);
+    const state = { power: this.power, bombs: this.bombs, weapon: this.weaponType, specials: new Set(this.specials.ids()), shield: this.specials.shield };
+    const r = resolvePickup(state, p.type, { maxPower: MAX_POWER, maxBombs: MAX_BOMBS });
+    this.power = r.state.power;
+    this.bombs = r.state.bombs;
+    this.weaponType = r.state.weapon;
+    if (r.special) this.specials.add(r.special);
+    if (r.shieldOn) this.specials.setShield(true);
+    this.addScore(r.score);
+    const tone = r.tone === 'weapon' ? WEAPON_TYPES[this.weaponType].color : COLORS[r.tone];
+    this.fx.floatText(x, y, r.text, tone);
   }
 
   // ------------------------------------------------------------------ player events
@@ -485,8 +496,7 @@ export class GameScene extends Phaser.Scene {
     this.playSfx('bomb', this.player.x);
     this.flares.burst(this.player.x, this.player.y, 1.4);
     this.lightLayer.add(this.player.x, this.player.y, 900, 0xc0e0ff, 700, 1);
-    const ring = this.fx.sprite('ring', this.player.x, this.player.y).setScale(0.3).setTint(0xb0e0ff);
-    this.tweens.add({ targets: ring, scale: 14, alpha: 0, duration: 700, ease: 'Cubic.easeOut', onComplete: () => this.fx.release(ring) });
+    this.fx.shockRing(this.player.x, this.player.y, 14);
     this.efire.clear(true);
     for (const e of this.enemies) {
       if (e.alive && e.y > -20 && e.y < H + 20) this.hitEnemy(e, 25, now);
@@ -505,6 +515,8 @@ export class GameScene extends Phaser.Scene {
     const pl = this.player;
     if (!pl.alive || this.phase === 'gameover') return;
     pl.kill();
+    this.weapons.idle();
+    this.specials.clear(true);
     this.levelStats.deaths++;
     this.fx.explode(pl.x, pl.y, 3.2);
     this.fx.screenFlash(0xff8040, 320, 0.4);
@@ -640,6 +652,8 @@ export class GameScene extends Phaser.Scene {
       lives: this.lives,
       bombs: this.bombs,
       power: this.power,
+      weapon: this.weaponType,
+      specials: [...this.specials.ids(), ...(this.specials.shield ? ['shield'] : [])].join(','),
       seed: this.seed,
       sector: this.sector + 1,
       level: this.levelIndex + 1,
