@@ -2,6 +2,8 @@
 
 A single-player, wide-screen vertical shoot-'em-up in the spirit of *Hybris* (Amiga 500), built with **Phaser 4**.
 
+**Play it in the browser: https://carkrueger.github.io/hybrisclone/**
+
 ![Sector 1-1, Orbital Shipyard](screenshot.png)
 
 - **1920×1080 (16:9)**, scaled to fit any window. The whole wide screen is the playfield.
