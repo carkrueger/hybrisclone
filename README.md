@@ -2,6 +2,8 @@
 
 A single-player, wide-screen vertical shoot-'em-up in the spirit of *Hybris* (Amiga 500), built with **Phaser 4**.
 
+![Sector 1-1, Orbital Shipyard](screenshot.png)
+
 - **1920×1080 (16:9)**, scaled to fit any window. The whole wide screen is the playfield.
 - **Painted HD graphics, all generated in code at boot.** The game ships no image files. It includes:
   - **Backdrop:** a seeded nebula and planet behind a parallax layer of giant capital ships: battleships, carriers, rotating ring stations and dry docks, with thousands of window lights, running lights and engine plumes.
